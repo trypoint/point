@@ -1,0 +1,33 @@
+# Git attributes for Composer distribution
+
+# Exclude development-only files from distribution package
+/.github                export-ignore
+/.kilo                  export-ignore
+/.opencode              export-ignore
+/.phpunit.cache         export-ignore
+/.phpstorm.meta.php     export-ignore
+/.cs.php                export-ignore
+/AGENTS.md              export-ignore
+/START-HERE.md          export-ignore
+/PHASE1_REPORT.md       export-ignore
+/phpstan.neon           export-ignore
+/phpunit.xml            export-ignore
+/.gitignore             export-ignore
+/.gitattributes         export-ignore
+/CONTRIBUTING.md        export-ignore
+
+# Exclude test files
+/tests                  export-ignore
+
+# Exclude documentation (keep in repo but not in package)
+/docs                   export-ignore
+
+# Exclude examples
+/examples               export-ignore
+
+# Include necessary runtime files
+/Point                  # included in package
+/composer.json          # included in package
+/composer.lock          # included in package
+/LICENSE.md             # included in package
+/README.md              # included in package

@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * Point Framework (https://point.madalinmariusstan.dev)
+ *
+ * @license https://github.com/trypoint/point/blob/main/LICENSE (MIT License)
+ */
+
+declare(strict_types=1);
+
+namespace Point\Middleware;
+
+use ErrorException;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Throwable;
+
+final class PlainTextExceptionMiddleware implements MiddlewareInterface
+{
+    use ExceptionMiddlewareTrait;
+
+    private const DEFAULT_TYPE = 'text/plain';
+
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler) : ResponseInterface
+    {
+        try {
+            return $handler->handle($request);
+        } catch (Throwable $exception) {
+            $contentType = $this->detectMediaType($request);
+
+            if ($contentType === null) {
+                throw $exception;
+            }
+
+            return $this->createResponse($exception, $this->createPayload($exception), $contentType);
+        }
+    }
+
+    private function createPayload(Throwable $exception) : string
+    {
+        $text = sprintf("%s\n", $this->getErrorTitle($exception));
+
+        if ($this->displayErrorDetails) {
+            $text .= $this->formatExceptionFragment($exception);
+
+            while ($exception = $exception->getPrevious()) {
+                $text .= "\nPrevious Exception:\n";
+                $text .= $this->formatExceptionFragment($exception);
+            }
+        }
+
+        return $text;
+    }
+
+    private function formatExceptionFragment(Throwable $exception) : string
+    {
+        $text = sprintf("Type: %s\n", $exception::class);
+
+        $code = $exception instanceof ErrorException ? $exception->getSeverity() : $exception->getCode();
+
+        $text .= sprintf("Code: %s\n", $code);
+        $text .= sprintf("Message: %s\n", $exception->getMessage());
+        $text .= sprintf("File: %s\n", $exception->getFile());
+        $text .= sprintf("Line: %s\n", $exception->getLine());
+        $text .= sprintf('Trace: %s', $exception->getTraceAsString());
+
+        return $text;
+    }
+}

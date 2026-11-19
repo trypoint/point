@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.4', '8.5']
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, json, xml, simplexml, dom, ctype, iconv
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --no-interaction
+
+      - name: Dump optimized autoloader
+        run: composer dump-autoload -o --strict-psr
+
+      - name: Check code style
+        run: composer cs:check
+
+      - name: Static analysis
+        run: composer stan
+
+      - name: Run tests
+        run: composer test
+
+  test-no-dev:
+    name: No-dev installation test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Create temporary directory
+        run: mkdir -p /tmp/test-install
+
+      - name: Copy package files
+        run: |
+          cp composer.json composer.lock /tmp/test-install/
+          cp -r Point /tmp/test-install/
+
+      - name: Install without dev dependencies
+        run: |
+          cd /tmp/test-install
+          composer install --no-dev --no-progress --prefer-dist --no-interaction
+
+      - name: Verify autoloading
+        run: |
+          cd /tmp/test-install
+          php -r "require 'vendor/autoload.php'; echo 'Autoload OK\n';"
+
+      - name: Test basic app creation
+        run: |
+          cd /tmp/test-install
+          php -r "
+            require 'vendor/autoload.php';
+            use Point\Factory\AppFactory;
+            use HttpSoft\Message\ResponseFactory;
+            use HttpSoft\Message\ServerRequestFactory;
+
+            \$app = AppFactory::create();
+            \$responseFactory = new ResponseFactory();
+            \$requestFactory = new ServerRequestFactory();
+            \$app->getContainer()->set(\Psr\Http\Message\ResponseFactoryInterface::class, \$responseFactory);
+            \$app->getContainer()->set(\Psr\Http\Message\ServerRequestFactoryInterface::class, \$requestFactory);
+            \$app->addErrorMiddleware(true, true, true);
+            \$app->addRoutingMiddleware();
+            \$app->get('/', function (\$request, \$response) {
+                \$response->getBody()->write('Hello, Point!');
+                return \$response;
+            });
+            echo 'App created: ' . get_class(\$app) . PHP_EOL;
+            echo 'Container: ' . get_class(\$app->getContainer()) . PHP_EOL;
+          "
+
+      - name: Test HTTP request handling
+        run: |
+          cd /tmp/test-install
+          php -r "
+            require 'vendor/autoload.php';
+            use Point\Factory\AppFactory;
+            use HttpSoft\Message\ResponseFactory;
+            use HttpSoft\Message\ServerRequestFactory;
+
+            \$app = AppFactory::create();
+            \$responseFactory = new ResponseFactory();
+            \$requestFactory = new ServerRequestFactory();
+            \$app->getContainer()->set(\Psr\Http\Message\ResponseFactoryInterface::class, \$responseFactory);
+            \$app->getContainer()->set(\Psr\Http\Message\ServerRequestFactoryInterface::class, \$requestFactory);
+            \$app->addErrorMiddleware(true, true, true);
+            \$app->addRoutingMiddleware();
+            \$app->get('/', function (\$request, \$response) {
+                \$response->getBody()->write('Hello, Point!');
+                return \$response;
+            });
+            \$app->get('/user/{id}', function (\$request, \$response, array \$args) {
+                \$response->getBody()->write('User: ' . \$args['id']);
+                return \$response;
+            });
+
+            // Test root route
+            \$request = \$requestFactory->createServerRequest('GET', '/');
+            \$response = \$app->handle(\$request);
+            \$status = \$response->getStatusCode();
+            \$body = (string)\$response->getBody();
+            echo 'GET /: ' . \$status . ' - ' . \$body . PHP_EOL;
+            if (\$status !== 200 || \$body !== 'Hello, Point!') {
+                echo 'FAIL: Unexpected response' . PHP_EOL;
+                exit(1);
+            }
+
+            // Test dynamic route
+            \$request = \$requestFactory->createServerRequest('GET', '/user/123');
+            \$response = \$app->handle(\$request);
+            \$status = \$response->getStatusCode();
+            \$body = (string)\$response->getBody();
+            echo 'GET /user/123: ' . \$status . ' - ' . \$body . PHP_EOL;
+            if (\$status !== 200 || \$body !== 'User: 123') {
+                echo 'FAIL: Unexpected response' . PHP_EOL;
+                exit(1);
+            }
+
+            echo 'All HTTP tests passed!' . PHP_EOL;
+          "

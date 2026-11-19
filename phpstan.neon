@@ -1,0 +1,6 @@
+parameters:
+    level: 8
+    paths:
+        - Point
+includes:
+    - vendor/bnf/phpstan-psr-container/extension.neon

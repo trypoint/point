@@ -1,0 +1,47 @@
+# Dependencies
+vendor/
+
+# IDE
+.idea/
+.vscode/
+.phpstorm.meta.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+.php-cs-fixer.cache
+.phpunit.cache/
+.phpunit.result.cache
+
+# Composer
+composer.phar
+
+# Test coverage
+coverage/
+*.cov
+*.xml
+*.clover
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Archives
+*.zip
+*.tar.gz
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Point Framework specific
+.kilo/
+.opencode/
+.php-cs-fixer.php
