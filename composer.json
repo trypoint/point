@@ -1,0 +1,81 @@
+
+{
+    "name": "trypoint/point",
+    "description": "A lightweight, modular PHP microframework built for flexibility and extensibility.",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "framework",
+        "microframework",
+        "php",
+        "api",
+        "router",
+        "middleware",
+        "psr-7",
+        "psr-15"
+    ],
+    "authors": [
+        {
+            "name": "Madalin Marius Stan",
+            "email": "madalinmariusstan@gmail.com",
+            "homepage": "https://madalinmariusstan.dev"
+        }
+    ],
+    "homepage": "https://www.point.madalinmariusstan.dev",
+    "support": {
+        "issues": "https://github.com/trypoint/point/issues",
+        "source": "https://github.com/trypoint/point",
+        "wiki": "https://github.com/trypoint/point/wiki"
+    },
+    "require": {
+        "php": "~8.4.0 || ~8.5.0",
+        "nikic/fast-route": "^1.3",
+        "psr/container": "^2.0",
+        "psr/http-factory": "^1.1",
+        "psr/http-message": "^2.0",
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0",
+        "psr/log": "^3.0"
+    },
+    "require-dev": {
+        "ext-simplexml": "*",
+        "ext-xml": "*",
+        "friendsofphp/php-cs-fixer": "^3.60",
+        "guzzlehttp/psr7": "^2.6",
+        "laminas/laminas-diactoros": "^3.0",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
+        "php-di/php-di": "^7.0",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^13.0"
+    },
+    "suggest": {
+        "php-di/php-di": "Optional PSR-11 dependency injection container.",
+        "guzzlehttp/psr7": "PSR-7 and PSR-17 HTTP message implementation.",
+        "nyholm/psr7": "Alternative PSR-7 HTTP message implementation."
+    },
+    "autoload": {
+        "psr-4": {
+            "Point\\": "Point/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Point\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "cs:check": "php-cs-fixer fix --dry-run --diff --config=.cs.php",
+        "cs:fix": "php-cs-fixer fix --config=.cs.php",
+        "stan": "phpstan analyse -c phpstan.neon --no-progress",
+        "test": "phpunit --configuration phpunit.xml",
+        "test:all": [
+            "@cs:check",
+            "@stan",
+            "@test"
+        ]
+    }
+}
