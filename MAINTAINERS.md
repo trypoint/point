@@ -43,6 +43,6 @@ By ensuring that all merged PRs are assigned to a milestone, we can easily find 
 
 ## Security
 
-Report vulnerabilities to **security@point.madalinmariusstan.dev**.
+Report vulnerabilities to [**security.point@madalinmariusstan.dev**](mailto:security.point@madalinmariusstan.dev).
 
 See [SECURITY.md](SECURITY.md) for supported versions.

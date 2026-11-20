@@ -358,7 +358,7 @@ php -S localhost:8080 -t public
 
 ## Security
 
-Report vulnerabilities to **security.point@madalinmariusstan.dev**.
+Report vulnerabilities to [**security.point@madalinmariusstan.dev**](mailto:security.point@madalinmariusstan.dev).
 
 See [SECURITY.md](SECURITY.md) for supported versions and disclosure policy.
 
