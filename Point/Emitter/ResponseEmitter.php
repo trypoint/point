@@ -42,6 +42,10 @@ final class ResponseEmitter implements EmitterInterface
      */
     public function emit(ResponseInterface $response) : void
     {
+        if ($response->getStatusCode() < 200 && $response->hasHeader('Content-Length')) {
+            $response = $response->withoutHeader('Content-Length');
+        }
+
         $isEmpty = $this->isResponseEmpty($response);
         if (headers_sent() === false) {
             $this->emitHeaders($response);
@@ -58,13 +62,14 @@ final class ResponseEmitter implements EmitterInterface
     }
 
     /**
-     * Asserts response body is empty or status code is 204, 205 or 304.
+     * Reports an empty body or a status that must not carry content.
      *
      * @param ResponseInterface $response
      */
     public function isResponseEmpty(ResponseInterface $response) : bool
     {
-        if (in_array($response->getStatusCode(), [204, 205, 304], true)) {
+        $status = $response->getStatusCode();
+        if ($status < 200 || in_array($status, [204, 205, 304], true)) {
             return true;
         }
         $stream = $response->getBody();

@@ -27,7 +27,7 @@ interface UrlGeneratorInterface
     public function fullUrlFor(UriInterface $uri, string $routeName, array $data = [], array $queryParams = []) : string;
 
     /**
-     * Build the path for a named route excluding the base path
+     * Build the path for a named route including the configured base path
      *
      * @param string $routeName Route name
      * @param array<string, string> $data Named argument replacement data

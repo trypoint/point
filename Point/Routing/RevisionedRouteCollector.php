@@ -35,6 +35,15 @@ final class RevisionedRouteCollector extends RouteCollector
         return $this->currentGroupPrefix;
     }
 
+    /**
+     * @param string $prefix
+     * @return void
+     */
+    public function addGroup($prefix, callable $callback)
+    {
+        $this->withGroupPrefix($this->currentGroupPrefix . $prefix, fn() => $callback($this));
+    }
+
     public function withGroupPrefix(string $prefix, callable $register) : void
     {
         $previous = $this->currentGroupPrefix;

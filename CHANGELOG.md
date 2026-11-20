@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-alpha.4] - Unreleased
+## [0.1.0-alpha.5] - Unreleased
+
+### Fixed
+
+- Include the active FastRoute group prefix in named URLs for application routes registered within a direct collector group.
+- Restore the previous group prefix when a collector callback throws while retaining routes already registered.
+- Report a registered service's missing dependency as a PSR-11 container failure and preserve the original exception.
+- Suppress informational response bodies and omit Content-Length for HTTP 1xx responses.
+
+### Documentation
+
+- Clarify that `relativeUrlFor()` includes the configured base path.
+
+## [0.1.0-alpha.4] - 2026-11-20
 
 ### Fixed
 

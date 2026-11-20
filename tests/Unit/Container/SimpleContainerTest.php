@@ -12,8 +12,10 @@ namespace Point\Tests\Unit\Container;
 
 use PHPUnit\Framework\TestCase;
 use Point\Container\SimpleContainer;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use RuntimeException;
 use stdClass;
 
 /**
@@ -22,6 +24,36 @@ use stdClass;
  */
 final class SimpleContainerTest extends TestCase
 {
+    public function testMissingDependencyIsReportedAsAKnownServiceFailure() : void
+    {
+        $container = new SimpleContainer();
+        $container->set('known', static fn(ContainerInterface $container) => $container->get('missing'));
+        self::assertTrue($container->has('known'));
+        self::assertFalse($container->has('missing'));
+
+        try {
+            $container->get('known');
+            self::fail('Expected a container exception.');
+        } catch (ContainerExceptionInterface $exception) {
+            self::assertNotInstanceOf(NotFoundExceptionInterface::class, $exception);
+            self::assertInstanceOf(NotFoundExceptionInterface::class, $exception->getPrevious());
+            self::assertStringContainsString('missing', $exception->getPrevious()->getMessage());
+        }
+
+        $container->set('missing', null);
+        self::assertNull($container->get('known'));
+        $container->set('missing', 'changed');
+        self::assertNull($container->get('known'));
+    }
+
+    public function testUnrelatedFactoryExceptionIsPropagatedUnchanged() : void
+    {
+        $original = new RuntimeException('Application failure');
+        $container = new SimpleContainer(['known' => static fn() => throw $original]);
+        $this->expectExceptionObject($original);
+        $container->get('known');
+    }
+
     public function testCanRegisterAndRetrieveArray() : void
     {
         $container = new SimpleContainer();

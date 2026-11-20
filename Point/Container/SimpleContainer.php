@@ -11,8 +11,10 @@ declare(strict_types=1);
 namespace Point\Container;
 
 use Exception;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use RuntimeException;
 
 /**
  * Simple PSR-11 container implementation for Point framework.
@@ -69,7 +71,11 @@ final class SimpleContainer implements ContainerInterface
         $definition = $this->definitions[$id];
 
         if (is_callable($definition)) {
-            $instance = $definition($this);
+            try {
+                $instance = $definition($this);
+            } catch (NotFoundExceptionInterface $exception) {
+                throw new class (sprintf('Unable to resolve service "%s".', $id), 0, $exception) extends RuntimeException implements ContainerExceptionInterface {};
+            }
         } else {
             $instance = $definition;
         }

@@ -21,7 +21,8 @@ final class ContentLengthMiddleware implements MiddlewareInterface
     {
         $response = $handler->handle($request);
 
-        if ($response->getStatusCode() === 204) {
+        $status = $response->getStatusCode();
+        if ($status < 200 || $status === 204) {
             return $response->withoutHeader('Content-Length');
         }
 

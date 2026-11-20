@@ -232,6 +232,27 @@ final class HttpCorrectnessTest extends TestCase
         self::assertSame('3', $app->handle($factory->createServerRequest('GET', '/body'))->getHeaderLine('Content-Length'));
     }
 
+    public function testContentLengthOmitsInformationalResponses() : void
+    {
+        $app = AppFactory::create();
+        $app->add(new ContentLengthMiddleware());
+        $app->get('/{status}[/{length}]', static function ($request, $response, array $args) {
+            $response->getBody()->write('abc');
+            $response = $response->withStatus((int)$args['status']);
+
+            return isset($args['length']) ? $response->withHeader('Content-Length', $args['length']) : $response;
+        });
+
+        $factory = new Psr17Factory();
+        foreach ([100, 103] as $status) {
+            foreach (['', '/3'] as $suffix) {
+                $response = $app->handle($factory->createServerRequest('GET', '/' . $status . $suffix));
+                self::assertSame($status, $response->getStatusCode());
+                self::assertFalse($response->hasHeader('Content-Length'));
+            }
+        }
+    }
+
     public function testOutputBufferingPreservesZero() : void
     {
         $factory = new Psr17Factory();

@@ -5,11 +5,19 @@ declare(strict_types=1);
 namespace Point\Tests\Unit\Emitter;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Point\Emitter\ResponseEmitter;
+use Psr\Http\Message\ResponseInterface;
 
 final class ResponseEmitterTest extends TestCase
 {
+    public static function informationalStatuses(): iterable
+    {
+        yield 'Continue' => [100];
+        yield 'Early Hints' => [103];
+    }
+
     private Psr17Factory $factory;
 
     protected function setUp(): void
@@ -57,5 +65,43 @@ final class ResponseEmitterTest extends TestCase
         $emitter = new ResponseEmitter();
         self::assertTrue($emitter->isResponseEmpty($response));
         self::assertSame(0, $stream->tell());
+    }
+
+    #[DataProvider('informationalStatuses')]
+    public function testInformationalResponseSuppressesBodyAndPreservesCursor(int $status): void
+    {
+        $stream = $this->factory->createStream('hello');
+        $stream->seek(2);
+        $response = $this->factory->createResponse($status)->withBody($stream);
+        $emitter = new ResponseEmitter();
+
+        $this->expectOutputString('');
+        $emitter->emit($response);
+        self::assertSame(2, $stream->tell());
+        self::assertTrue($emitter->isResponseEmpty($response));
+    }
+
+    #[DataProvider('informationalStatuses')]
+    public function testInformationalResponseDropsExplicitLengthBeforeEmission(int $status): void
+    {
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn($status);
+        $response->method('getBody')->willReturn($this->factory->createStream(''));
+        $response->method('hasHeader')->willReturnCallback(static fn(string $name) => $name === 'Content-Length');
+        $response->expects(self::once())->method('withoutHeader')->with('Content-Length')
+            ->willReturn($this->factory->createResponse($status));
+        $this->expectOutputString('');
+
+        (new ResponseEmitter())->emit($response);
+    }
+
+    public function testNormalResponseStillEmitsBody(): void
+    {
+        $response = $this->factory->createResponse(200)
+            ->withHeader('Content-Length', '5')
+            ->withBody($this->factory->createStream('hello'));
+        $this->expectOutputString('hello');
+
+        (new ResponseEmitter())->emit($response);
     }
 }

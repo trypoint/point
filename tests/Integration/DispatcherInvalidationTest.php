@@ -23,12 +23,74 @@ use Point\Routing\FastRouteDispatcher;
 use Point\Routing\Route;
 use Point\Routing\RouteGroup;
 use ReflectionProperty;
+use RuntimeException;
 
 /**
  * @internal
  */
 final class DispatcherInvalidationTest extends TestCase
 {
+    public function testApplicationRoutesInRawCollectorGroupsRoundTripAfterWarmDispatch() : void
+    {
+        $app = AppFactory::create();
+        $requests = new Psr17Factory();
+        $handler = static fn($request, $response) => $response;
+        $collector = $app->getContainer()->get(RouterInterface::class)->getRouteCollector();
+        $urls = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
+        self::assertSame(404, $app->handle($requests->createServerRequest('GET', '/outer/later'))->getStatusCode());
+
+        $collector->addGroup('/outer', static function (RouteCollector $collector) use ($app, $handler) {
+            $app->get('/later', $handler)->setName('later');
+            $collector->addGroup('/inner', static function () use ($app, $handler) {
+                $app->get('/item/{id}', $handler)->setName('nested');
+            });
+        });
+
+        $later = $urls->urlFor('later');
+        $nested = $urls->urlFor('nested', ['id' => '42']);
+        self::assertSame('/outer/later', $later);
+        self::assertSame('/outer/inner/item/42', $nested);
+        foreach ([$later, $nested] as $path) {
+            self::assertSame(200, $app->handle($requests->createServerRequest('GET', $path))->getStatusCode());
+        }
+        foreach (['/later', '/outer/outer/later', '/inner/item/42'] as $path) {
+            self::assertSame(404, $app->handle($requests->createServerRequest('GET', $path))->getStatusCode());
+        }
+    }
+
+    public function testThrowingRawGroupRestoresScopeWithoutLosingRegistrations() : void
+    {
+        $app = AppFactory::create();
+        $requests = new Psr17Factory();
+        $handler = static fn($request, $response) => $response;
+        $collector = $app->getContainer()->get(RouterInterface::class)->getRouteCollector();
+        $failure = new RuntimeException('Group failed');
+        self::assertSame(404, $app->handle($requests->createServerRequest('GET', '/before'))->getStatusCode());
+
+        $collector->addGroup('/outer', static function (RouteCollector $active) use ($collector, $app, $handler, $failure) {
+            self::assertSame($collector, $active);
+            try {
+                $active->addGroup('/failed', static function () use ($app, $handler, $failure) {
+                    $app->get('/saved', $handler);
+
+                    throw $failure;
+                });
+                self::fail('Expected group exception.');
+            } catch (RuntimeException $caught) {
+                self::assertSame($failure, $caught);
+            }
+            $app->get('/after', $handler);
+        });
+        $app->get('/root', $handler);
+
+        foreach (['/outer/failed/saved', '/outer/after', '/root'] as $path) {
+            self::assertSame(200, $app->handle($requests->createServerRequest('GET', $path))->getStatusCode());
+        }
+        foreach (['/outer/failed/after', '/outer/root'] as $path) {
+            self::assertSame(404, $app->handle($requests->createServerRequest('GET', $path))->getStatusCode());
+        }
+    }
+
     public function testRetainedGroupsKeepPrefixesAfterWarmDispatch() : void
     {
         $app = AppFactory::create();

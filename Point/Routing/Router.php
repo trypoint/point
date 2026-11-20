@@ -64,7 +64,7 @@ final class Router implements RouterInterface, RequestHandlerInterface
             throw new InvalidArgumentException('HTTP methods array cannot be empty');
         }
 
-        $route = new Route($methods, $path, $handler, null);
+        $route = new Route($methods, $this->collector->getGroupPrefix() . $path, $handler, null);
 
         $this->collector->addRoute($methods, $path, $route);
 
