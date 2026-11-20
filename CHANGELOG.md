@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-alpha.2] - Unreleased
+
+### Added
+
+#### Developer Experience
+- Automatic default middleware bootstrap via `AppFactory::create()` — routes work without manual `addErrorMiddleware()` / `addRoutingMiddleware()` calls
+- `App::withDefaults(bool $enable = true)` — opt-out/in for automatic default middleware (mutates instance, returns `$this`)
+- `AppFactory::createFromContainer()` leaves defaults disabled (external PSR-11 containers untouched)
+- No duplicate default middleware when user explicitly registers error or routing middleware
+
+#### Testing
+- Middleware pipeline regression tests (`tests/Unit/Routing/PipelineRunnerTest.php`): consecutive requests, nested middleware A→B→Endpoint, short-circuiting, exception propagation, direct instance reuse, multi-invocation handler
+- Default bootstrap regression tests (`tests/Integration/DefaultBootstrapTest.php`): Hello World without manual middleware, custom middleware before routing, short-circuiting, consecutive requests, 404/405/500 responses, no duplicates, custom error handling, external PSR-11 containers, opt-out
+
+### Changed
+- PHP requirement: `>=8.4.27` (no upper limit)
+- `AppFactory::create()` enables automatic defaults by default
+- `HtmlExceptionMiddleware` defaults to `text/html` when media type cannot be detected (no longer re-throws on missing Accept header)
+
+### Fixed
+- HTTP 404/405/500 reliability fixes (content negotiation, Allow header, error rendering)
+- PHPUnit test-suite cleanup: removed deprecated `ReflectionProperty::setAccessible()` call, fixed error-handler stack restoration in `ErrorExceptionMiddlewareTest`
+
+### Security
+- No known vulnerabilities
+- Error details disabled by default in production
+
 ## [0.1.0-alpha.1] - Unreleased
 
 ### Added

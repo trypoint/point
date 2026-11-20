@@ -65,26 +65,27 @@ final class ErrorExceptionMiddlewareTest extends TestCase
         $middleware = new ErrorExceptionMiddleware();
         $request = $this->createRequest('GET', '/');
 
-        // Set a test handler to track restoration
         $testHandler = static fn() => null;
-        $previousHandler = set_error_handler($testHandler);
+        set_error_handler($testHandler);
 
-        $handler = new class () implements RequestHandlerInterface {
-            public function handle(ServerRequestInterface $request) : ResponseInterface
-            {
-                return (new \Nyholm\Psr7\Factory\Psr17Factory())->createResponse(200);
-            }
-        };
+        try {
+            $handler = new class () implements RequestHandlerInterface {
+                public function handle(ServerRequestInterface $request) : ResponseInterface
+                {
+                    return (new \Nyholm\Psr7\Factory\Psr17Factory())->createResponse(200);
+                }
+            };
 
-        $middleware->process($request, $handler);
+            $middleware->process($request, $handler);
 
-        // After middleware runs, error handler should be restored to our test handler
-        // Verify by setting a new handler - it should return our test handler
-        $restoredHandler = set_error_handler(static fn() => null);
-        self::assertSame($testHandler, $restoredHandler);
-
-        // Restore original handler
-        set_error_handler($previousHandler);
+            // After middleware runs, error handler should be restored to our test handler
+            $restoredHandler = set_error_handler(static fn() => null);
+            self::assertSame($testHandler, $restoredHandler);
+        } finally {
+            // Pop both handlers we pushed onto the stack (test handler + null handler)
+            restore_error_handler();
+            restore_error_handler();
+        }
     }
 
     private function createRequest(string $method, string $uri) : ServerRequestInterface

@@ -27,7 +27,7 @@
         "wiki": "https://github.com/trypoint/point/wiki"
     },
     "require": {
-        "php": "~8.4.0 || ~8.5.0",
+        "php": ">=8.4.27",
         "httpsoft/http-message": "^1.1",
         "httpsoft/http-server-request": "^1.1",
         "nikic/fast-route": "^1.3",

@@ -2,7 +2,7 @@
 
 **Point is a lightweight, modular PHP microframework built for flexibility and extensibility.**
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.4%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-8.4.27%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 [![Build Status](https://github.com/trypoint/point/actions/workflows/ci.yml/badge.svg)](https://github.com/trypoint/point/actions/workflows/ci.yml)
 
@@ -18,13 +18,13 @@
 - **Error handling** with detailed stack traces in development
 - **Default PSR-7 implementation** via httpsoft (no additional packages required)
 - **Optional PSR-7 implementations** via nyholm/psr7, laminas/laminas-diactoros, guzzlehttp/psr7
-- **PHP 8.4 / 8.5** native with strict typing
+- **PHP 8.4.27 / 8.5** native with strict typing
 
 ---
 
 ## Requirements
 
-- **PHP** >= 8.4
+- **PHP** >= 8.4.27
 - **Composer** 2.x
 - **Extensions**: `mbstring`, `json` (standard in PHP 8.4+)
 
@@ -60,23 +60,9 @@ composer require guzzlehttp/psr7
 require __DIR__ . '/vendor/autoload.php';
 
 use Point\Factory\AppFactory;
-use HttpSoft\Message\ResponseFactory;
-use HttpSoft\Message\ServerRequestFactory;
 
-// Create application
+// Create application with default error handling and routing middleware
 $app = AppFactory::create();
-
-// Optional: use a specific PSR-17 factory (httpsoft is default)
-$responseFactory = new ResponseFactory();
-$requestFactory = new ServerRequestFactory();
-$app->getContainer()->set(\Psr\Http\Message\ResponseFactoryInterface::class, $responseFactory);
-$app->getContainer()->set(\Psr\Http\Message\ServerRequestFactoryInterface::class, $requestFactory);
-
-// Add error handling (development mode)
-$app->addErrorMiddleware(true, true, true);
-
-// Add routing middleware
-$app->addRoutingMiddleware();
 
 // GET route
 $app->get('/', function ($request, $response) {
@@ -90,16 +76,6 @@ $app->get('/user/{id}', function ($request, $response, array $args) {
     return $response;
 });
 
-// JSON response
-$app->get('/api/users', function ($request, $response) {
-    $data = [
-        ['id' => 1, 'name' => 'Alice'],
-        ['id' => 2, 'name' => 'Bob'],
-    ];
-    $response->getBody()->write(json_encode($data));
-    return $response->withHeader('Content-Type', 'application/json');
-});
-
 // Run the application
 $app->run();
 ```
@@ -111,6 +87,8 @@ php -S localhost:8080 -t public
 ```
 
 Visit `http://localhost:8080/` to see the response.
+
+> **Advanced configuration:** For advanced use cases, disable automatic defaults with `$app->withDefaults(false)` and manually register error handling and routing middleware via `$app->addErrorMiddleware()` and `$app->addRoutingMiddleware()`.
 
 ---
 

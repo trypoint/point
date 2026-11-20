@@ -226,6 +226,62 @@ final class ApplicationTest extends TestCase
         self::assertEquals(404, $response->getStatusCode());
     }
 
+    public function testReturns404ForUnknownRouteWithHtmlAccept() : void
+    {
+        $app = $this->createApp();
+        $app->addErrorMiddleware(true, false);
+        $app->addRoutingMiddleware();
+        $app->get('/', static fn($req, $res) => $res);
+
+        $request = $this->createRequest('GET', '/unknown', ['Accept' => 'text/html']);
+        $response = $app->handle($request);
+
+        self::assertEquals(404, $response->getStatusCode());
+        self::assertStringContainsString('text/html', $response->getHeaderLine('Content-Type'));
+    }
+
+    public function testReturns404ForFaviconRequest() : void
+    {
+        $app = $this->createApp();
+        $app->addErrorMiddleware(true, false);
+        $app->addRoutingMiddleware();
+        $app->get('/', static fn($req, $res) => $res);
+
+        $request = $this->createRequest('GET', '/favicon.ico', ['Accept' => 'image/avif,image/webp,image/*,*/*;q=0.8']);
+        $response = $app->handle($request);
+
+        self::assertEquals(404, $response->getStatusCode());
+    }
+
+    public function testReturns405ForWrongMethodWithHtmlAccept() : void
+    {
+        $app = $this->createApp();
+        $app->addErrorMiddleware(true, false);
+        $app->addRoutingMiddleware();
+        $app->get('/', static fn($req, $res) => $res);
+
+        $request = $this->createRequest('POST', '/', ['Accept' => 'text/html']);
+        $response = $app->handle($request);
+
+        self::assertEquals(405, $response->getStatusCode());
+        self::assertStringContainsString('GET', $response->getHeaderLine('Allow'));
+        self::assertStringContainsString('text/html', $response->getHeaderLine('Content-Type'));
+    }
+
+    public function testReturns500ForServerError() : void
+    {
+        $app = $this->createApp();
+        $app->addErrorMiddleware(true, false);
+        $app->addRoutingMiddleware();
+        $app->get('/error', static fn() => throw new RuntimeException('Unexpected failure'));
+
+        $request = $this->createRequest('GET', '/error', ['Accept' => 'text/html']);
+        $response = $app->handle($request);
+
+        self::assertEquals(500, $response->getStatusCode());
+        self::assertStringContainsString('text/html', $response->getHeaderLine('Content-Type'));
+    }
+
     public function testReturns405ForWrongMethod() : void
     {
         $app = $this->createApp();

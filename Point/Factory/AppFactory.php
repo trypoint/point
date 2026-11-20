@@ -35,7 +35,11 @@ final class AppFactory
     {
         $containerBuilder = self::$containerFactory ?? new DiContainerFactory();
 
-        return $containerBuilder->createContainer($definitions)->get(App::class);
+        $app = $containerBuilder->createContainer($definitions)->get(App::class);
+
+        $app->withDefaults(true);
+
+        return $app;
     }
 
     /**

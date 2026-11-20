@@ -28,11 +28,7 @@ final class HtmlExceptionMiddleware implements MiddlewareInterface
         try {
             return $handler->handle($request);
         } catch (Throwable $exception) {
-            $contentType = $this->detectMediaType($request);
-
-            if ($contentType === null) {
-                throw $exception;
-            }
+            $contentType = $this->detectMediaType($request) ?? self::DEFAULT_TYPE;
 
             return $this->createResponse($exception, $this->createPayload($exception), $contentType);
         }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "90d20c111e0f6efc16c9f156bcb7bc36",
+    "content-hash": "d6a8e28e91b9932a0635ea5e17c05e7c",
     "packages": [
         {
             "name": "httpsoft/http-message",
@@ -5820,7 +5820,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "~8.4.0 || ~8.5.0"
+        "php": ">=8.4.27"
     },
     "platform-dev": {
         "ext-simplexml": "*",

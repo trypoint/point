@@ -20,6 +20,7 @@ use Point\Middleware\ExceptionLoggingMiddleware;
 use Point\Middleware\HtmlExceptionMiddleware;
 use Point\Middleware\JsonExceptionMiddleware;
 use Point\Middleware\RoutingMiddleware;
+use Point\Routing\PipelineRunner;
 use Point\Routing\Route;
 use Point\Routing\RouteCollectionTrait;
 use Point\Routing\RouteGroup;
@@ -76,6 +77,27 @@ class App implements RequestHandlerInterface
     private ServerRequestCreatorInterface $serverRequestCreator;
 
     /**
+     * Whether automatic default middleware is enabled.
+     *
+     * @var bool
+     */
+    private bool $defaultsEnabled = false;
+
+    /**
+     * Whether error middleware was explicitly registered by the user.
+     *
+     * @var bool
+     */
+    private bool $errorMiddlewareRegistered = false;
+
+    /**
+     * Whether routing middleware was explicitly registered by the user.
+     *
+     * @var bool
+     */
+    private bool $routingMiddlewareRegistered = false;
+
+    /**
      * The constructor.
      *
      * Initializes the Point application with the provided container, request creator,
@@ -118,6 +140,8 @@ class App implements RequestHandlerInterface
         bool $logErrorDetails = true,
         ?LoggerInterface $logger = null,
     ) : self {
+        $this->errorMiddlewareRegistered = true;
+
         $htmlMiddleware = $this->container->get(HtmlExceptionMiddleware::class)->withErrorDetails($displayErrorDetails);
         $jsonMiddleware = $this->container->get(JsonExceptionMiddleware::class)->withErrorDetails($displayErrorDetails);
 
@@ -160,6 +184,8 @@ class App implements RequestHandlerInterface
      */
     public function addRoutingMiddleware() : self
     {
+        $this->routingMiddlewareRegistered = true;
+
         return $this
             ->add(RoutingMiddleware::class)
             ->add(EndpointMiddleware::class);
@@ -179,6 +205,23 @@ class App implements RequestHandlerInterface
     public function getContainer() : ContainerInterface
     {
         return $this->container;
+    }
+
+    /**
+     * Enable or disable automatic default middleware registration.
+     *
+     * When enabled, AppFactory::create() automatically registers error handling
+     * and routing middleware so routes work without manual middleware setup.
+     *
+     * @param bool $enable Whether to enable automatic defaults
+     *
+     * @return self
+     */
+    public function withDefaults(bool $enable = true) : self
+    {
+        $this->defaultsEnabled = $enable;
+
+        return $this;
     }
 
     /**
@@ -202,7 +245,58 @@ class App implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request) : ResponseInterface
     {
+        if ($this->defaultsEnabled) {
+            $pipeline = $this->buildEffectiveMiddleware();
+            $pipelineRunner = $this->container->get(PipelineRunner::class);
+
+            return $pipelineRunner->withPipeline($pipeline)->handle($request);
+        }
+
         return $this->requestHandler->handle($request);
+    }
+
+    /**
+     * Build the effective middleware pipeline in the correct order:
+     * Error Handling → User Middleware → Routing → Endpoint.
+     *
+     * @return array<MiddlewareInterface|callable|string>
+     */
+    private function buildEffectiveMiddleware() : array
+    {
+        $existing = $this->router->getMiddleware();
+        $effective = [];
+
+        if (!$this->errorMiddlewareRegistered) {
+            $effective[] = ErrorExceptionMiddleware::class;
+            $effective[] = HtmlExceptionMiddleware::class;
+            $effective[] = JsonExceptionMiddleware::class;
+            $effective[] = ExceptionLoggingMiddleware::class;
+        }
+
+        foreach ($existing as $middleware) {
+            if ($this->isRoutingOrEndpoint($middleware)) {
+                if ($this->routingMiddlewareRegistered) {
+                    $effective[] = $middleware;
+                }
+            } else {
+                $effective[] = $middleware;
+            }
+        }
+
+        if (!$this->routingMiddlewareRegistered) {
+            $effective[] = RoutingMiddleware::class;
+            $effective[] = EndpointMiddleware::class;
+        }
+
+        return $effective;
+    }
+
+    private function isRoutingOrEndpoint(mixed $middleware) : bool
+    {
+        return $middleware === RoutingMiddleware::class
+            || $middleware === EndpointMiddleware::class
+            || $middleware instanceof RoutingMiddleware
+            || $middleware instanceof EndpointMiddleware;
     }
 
     /**

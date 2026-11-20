@@ -55,7 +55,6 @@ final class HttpDefinitionsTest extends TestCase
         // Use reflection to test with a mocked class_exists that returns false
         $reflection = new ReflectionClass($definitions);
         $property = $reflection->getProperty('classExists');
-        $property->setAccessible(true);
         $property->setValue($definitions, static fn($class) => false);
 
         $definitions->getDefinitions();

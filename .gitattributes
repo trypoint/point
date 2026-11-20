@@ -24,10 +24,3 @@
 
 # Exclude examples
 /examples               export-ignore
-
-# Include necessary runtime files
-/Point                  # included in package
-/composer.json          # included in package
-/composer.lock          # included in package
-/LICENSE.md             # included in package
-/README.md              # included in package
