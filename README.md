@@ -80,7 +80,7 @@ $app->addRoutingMiddleware();
 
 // GET route
 $app->get('/', function ($request, $response) {
-    $response->getBody()->write('Hello, Point!');
+    $response->getBody()->write('Hello, World!');
     return $response;
 });
 
