@@ -1,19 +1,27 @@
-# Point Framework — Agent Instructions
+# Point Framework — Codex project instructions
 
-This repository is **trypoint/point**, a small independent PHP microframework. Only modify the existing project. Target Phase 1 is core stabilization, not new features.
+Point is a lightweight PSR-compatible PHP microframework. Keep its core as small and predictable as Slim 5 while preserving the five-minute Hello World experience.
 
-## Read first
-`composer.json`, `Point/App.php`, `Point/Factory/AppFactory.php`, `Point/Container/DiContainerFactory.php`, `Point/Middleware/ExceptionMiddlewareTrait.php`, `Point/Routing/PipelineRunner.php`.
+## Non-negotiable constraints
 
-## Guardrails
-- Preserve `Point\` PSR-4, PHP 8.4/8.5, PSR interfaces and existing public API whenever possible.
-- Preserve upstream notices and all original license attribution.
-- No pushes, tag/release publishing, remote deploys, new framework skeleton, or unrelated features.
-- Check git status before writes; don't overwrite pre-existing user edits.
-- Ensure concrete PSR-7/PSR-17 implementation is used in runtime smoke tests.
-- Validate Composer's `--no-dev` runtime independently.
-- Every report must distinguish observed, inferred and untested facts.
+- Minimum PHP version: **8.4.27**. Never use syntax or APIs that require a newer minimum. Avoid deprecated PHP APIs on tested supported versions.
+- Preserve existing public APIs and PSR-7, PSR-11, PSR-15, and PSR-17 interoperability unless an explicitly approved breaking change is required.
+- Do not add runtime dependencies, architectural layers, CLI, ORM, Events, Hooks, Service Providers, or other framework features unless explicitly requested.
+- Make the smallest justified change. Distinguish verified defects from preferences and hypotheses.
+- Preserve the default `AppFactory::create()` bootstrap, and `createFromContainer()` behavior with external PSR-11 containers.
+- Keep the canonical example using `$response->getBody()->write('Hello, World!');`.
+- Never modify `vendor/` or unrelated user changes.
+- Do not commit, push, tag, create releases, or publish packages without the user's explicit request.
 
-## Sequence
-Point lead → autoload → container → HTTP → routing → security review → QA validation.
-Parallelize **read-only** investigations; serialize edits to shared files.
+## How to work
+
+1. Read relevant files before proposing changes. Reproduce defects where feasible.
+2. For audits, do not edit files. Cite precise file paths and symbols; flag unverified claims.
+3. For approved fixes, write focused regression tests and keep diffs small.
+4. Run relevant checks using the project's available Composer scripts; do not assume scripts exist. Typical checks: `composer validate --strict`, `composer test`, `composer stan`, `composer cs:check`.
+5. Report checks actually executed, exact failures, PHP runtime version and coverage gaps. A CI job using `8.4` is not proof the exact `8.4.27` patch was tested.
+6. Summaries should be concise and actionable. Do not claim speedups without measured post-change timings.
+
+## Agent delegation
+
+Use at most one implementation agent on a set of files at a time. Parallel work is best reserved for independent read-only reviews. A parent agent should collect findings before approving changes.

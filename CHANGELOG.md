@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-alpha.2] - Unreleased
+## [0.1.0-alpha.3] - Unreleased
+
+### Fixed
+
+- Preserve valid HTTP exception statuses, use HTTP 500 for other exceptions, and keep exception details out of default error responses.
+- Suppress HEAD bodies in default and explicit middleware stacks, include implicit HEAD in `Allow`, honor Accept quality values, and escape HTML error descriptions without double-escaping entities.
+- Omit `Content-Length` on HTTP 204 and preserve buffered output containing only `0`.
+- Preserve seekable response stream positions during empty-body detection and leave non-seekable bodies unread.
+- Encode route parameters, reject encoded slashes before matching, and resolve renamed routes consistently when names collide.
+- Honor routes registered after the first request, including registrations through FastRoute collector APIs.
+- Resolve explicitly registered null services, cache null factory results, and accept numeric string service IDs in constructor definitions.
+- Restore the public quick start and document the PHP minimum, URL generation, and middleware setup.
+
+### Changed
+
+- Check an internal revision before rebuilding the built-in FastRoute dispatcher. Warm dispatch no longer scans the route table for changes. At 10,000 static routes, median warm dispatch fell from 2.36 ms to 0.54 µs compared with the pre-fix Alpha.3 candidate on PHP 8.5.12.
+- Require `^1.0.2` for both PSR-15 packages. The locked package versions are unchanged, including `psr/http-message` 2.0.
+
+## [0.1.0-alpha.2] - 2026-11-20
 
 ### Added
 
@@ -32,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No known vulnerabilities
 - Error details disabled by default in production
 
-## [0.1.0-alpha.1] - Unreleased
+## [0.1.0-alpha.1] - 2026-11-19
 
 ### Added
 

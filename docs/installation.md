@@ -2,9 +2,9 @@
 
 ## Requirements
 
-- **PHP** >= 8.4 (8.5 supported)
+- **PHP** >= 8.4.27 (8.5 supported)
 - **Composer** 2.x
-- Required extensions: `mbstring`, `json` (bundled with PHP 8.4+)
+- Optional XML middleware requires SimpleXML for request parsing or DOM for error rendering.
 
 ## Composer Installation
 
@@ -12,9 +12,10 @@
 composer require trypoint/point
 ```
 
-## PSR-7 Implementation (Required)
+## PSR-7 Implementation
 
-Point requires a PSR-7/PSR-17 implementation. Choose one:
+Point installs HttpSoft as its default PSR-7/PSR-17 implementation. To use a
+different implementation, install its package and configure the application's HTTP factories.
 
 ### Nyholm (Recommended)
 
@@ -47,7 +48,7 @@ composer require httpsoft/http-message httpsoft/http-server-request
 For testing and code quality:
 
 ```bash
-composer install --dev
+composer install
 ```
 
 This installs:

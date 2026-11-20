@@ -20,6 +20,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use function in_array;
 use function json_decode;
+use function sprintf;
 
 final class JsonBodyParserMiddleware implements MiddlewareInterface
 {

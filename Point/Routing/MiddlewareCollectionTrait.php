@@ -28,9 +28,7 @@ trait MiddlewareCollectionTrait
 
     public function addMiddleware(MiddlewareInterface $middleware) : self
     {
-        $this->middleware[] = $middleware;
-
-        return $this;
+        return $this->add($middleware);
     }
 
     /**

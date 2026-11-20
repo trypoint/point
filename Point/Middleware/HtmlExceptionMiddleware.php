@@ -28,7 +28,15 @@ final class HtmlExceptionMiddleware implements MiddlewareInterface
         try {
             return $handler->handle($request);
         } catch (Throwable $exception) {
-            $contentType = $this->detectMediaType($request) ?? self::DEFAULT_TYPE;
+            $contentType = $this->detectMediaType($request);
+            if ($contentType === null) {
+                $preference = $this->mediaPreference($request->getHeaderLine('Accept'), self::DEFAULT_TYPE);
+                if ($preference !== null && $preference[0] === 0.0) {
+                    return $this->createResponse($exception, '', null);
+                }
+
+                $contentType = self::DEFAULT_TYPE;
+            }
 
             return $this->createResponse($exception, $this->createPayload($exception), $contentType);
         }
@@ -41,7 +49,10 @@ final class HtmlExceptionMiddleware implements MiddlewareInterface
             $html .= '<h2>Details</h2>';
             $html .= $this->renderExceptionFragment($exception);
         } else {
-            $html = sprintf('<p>%s</p>', $this->getErrorDescription($exception));
+            $html = sprintf(
+                '<p>%s</p>',
+                htmlspecialchars($this->getErrorDescription($exception), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', false),
+            );
         }
 
         return $this->renderHtmlBody($this->getErrorTitle($exception), $html);

@@ -8,9 +8,7 @@
 
 namespace Point\Routing;
 
-use FastRoute\DataGenerator\GroupCountBased;
 use FastRoute\RouteCollector;
-use FastRoute\RouteParser\Std;
 use InvalidArgumentException;
 use Point\Interfaces\RouteInterface;
 use Point\Interfaces\RouterInterface;
@@ -31,7 +29,7 @@ final class Router implements RouterInterface, RequestHandlerInterface
 
     public function __construct(PipelineRunner $pipelineRunner)
     {
-        $this->collector = new RouteCollector(new Std(), new GroupCountBased());
+        $this->collector = new RevisionedRouteCollector();
         $this->pipelineRunner = $pipelineRunner;
     }
 

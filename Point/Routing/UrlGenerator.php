@@ -28,6 +28,7 @@ use function array_reverse;
 use function http_build_query;
 use function implode;
 use function is_string;
+use function rawurlencode;
 
 final class UrlGenerator implements UrlGeneratorInterface
 {
@@ -87,13 +88,12 @@ final class UrlGenerator implements UrlGeneratorInterface
     private function getNamedRoute(string $name) : RouteInterface
     {
         $routes = $this->router->getRouteCollector()->getData();
-
         $iterator = new RecursiveIteratorIterator(
             new RecursiveArrayIterator($routes, RecursiveArrayIterator::CHILD_ARRAYS_ONLY),
         );
 
         foreach ($iterator as $route) {
-            if ($route instanceof RouteInterface && $name === $route->getName()) {
+            if ($route instanceof RouteInterface && $route->getName() === $name) {
                 return $route;
             }
         }
@@ -109,7 +109,6 @@ final class UrlGenerator implements UrlGeneratorInterface
      */
     private function getSegments(string $pattern, array $data) : array
     {
-        $segments = [];
         $segmentName = '';
 
         /*
@@ -120,6 +119,8 @@ final class UrlGenerator implements UrlGeneratorInterface
         $expressions = array_reverse($this->routeParser->parse($pattern));
 
         foreach ($expressions as $expression) {
+            $segments = [];
+
             foreach ($expression as $segment) {
                 /*
                  * Each $segment is either a string or an array of strings
@@ -143,7 +144,7 @@ final class UrlGenerator implements UrlGeneratorInterface
                     break;
                 }
 
-                $segments[] = $data[$segment[0]];
+                $segments[] = rawurlencode((string)$data[$segment[0]]);
             }
 
             /*
@@ -151,15 +152,11 @@ final class UrlGenerator implements UrlGeneratorInterface
              * for the provided $data which means we don't need to continue testing
              * less specific expressions
              */
-            if (! $segments) {
-                break;
+            if ($segments) {
+                return $segments;
             }
         }
 
-        if (! $segments) {
-            throw new InvalidArgumentException('Missing data for URL segment: ' . $segmentName);
-        }
-
-        return $segments;
+        throw new InvalidArgumentException('Missing data for URL segment: ' . $segmentName);
     }
 }

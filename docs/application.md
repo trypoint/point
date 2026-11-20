@@ -33,7 +33,7 @@ $app->addErrorMiddleware(
     logErrorDetails: true        // Include details in logs
 );
 
-// Routing middleware (required for route matching)
+// Optional with AppFactory::create(); required when assembling the stack manually
 $app->addRoutingMiddleware();
 ```
 
@@ -49,7 +49,7 @@ $app->get('/user/{id}', $handler);
 $app->get('/user/{id:\d+}', $handler); // Regex constraint
 
 // Route groups
-$app->group('/api', function ($group) {
+$app->group('/api', function ($group) use ($handler) {
     $group->get('/users', $handler);
     $group->post('/users', $handler);
 });
@@ -140,19 +140,11 @@ $app->getContainer()->set(
 require __DIR__ . '/../vendor/autoload.php';
 
 use Point\Factory\AppFactory;
-use Nyholm\Psr7\Factory\Psr17Factory;
 
 $app = AppFactory::create();
 
-$psr17 = new Psr17Factory();
-$app->getContainer()->set(\Psr\Http\Message\ResponseFactoryInterface::class, $psr17);
-$app->getContainer()->set(\Psr\Http\Message\ServerRequestFactoryInterface::class, $psr17);
-
-$app->addErrorMiddleware(true, true, true);
-$app->addRoutingMiddleware();
-
 $app->get('/', function ($request, $response) {
-    $response->getBody()->write('Hello, Point!');
+    $response->getBody()->write('Hello, World!');
     return $response;
 });
 
@@ -171,5 +163,5 @@ php -S localhost:8080 -t public
 ```
 
 Visit:
-- `http://localhost:8080/` → "Hello, Point!"
+- `http://localhost:8080/` → "Hello, World!"
 - `http://localhost:8080/hello/World` → "Hello, World!"

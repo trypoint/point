@@ -2,6 +2,7 @@
 
 # Exclude development-only files from distribution package
 /.github                export-ignore
+/.codex                 export-ignore
 /.kilo                  export-ignore
 /.opencode              export-ignore
 /.phpunit.cache         export-ignore

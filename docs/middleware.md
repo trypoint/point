@@ -37,13 +37,13 @@ class TimingMiddleware implements MiddlewareInterface
 ```php
 // Global middleware (every request)
 $app->add(new TimingMiddleware());
-$app->add(TimingMiddleware::class); // Resolved from container
+// Alternatively, register TimingMiddleware::class in the container and add it by ID.
 
 // Route-specific middleware
 $app->get('/admin', $handler)->add($authMiddleware);
 
 // Group middleware
-$app->group('/api', function ($group) {
+$app->group('/api', function ($group) use ($rateLimitMiddleware, $handler) {
     $group->add($rateLimitMiddleware);
     $group->get('/users', $handler);
 });
@@ -78,7 +78,7 @@ Response
 | `ExceptionLoggingMiddleware` | Logs exceptions via PSR-3 |
 
 ```php
-// Add all error middleware at once
+// Configure the error stack explicitly, before routing.
 $app->addErrorMiddleware(
     displayErrorDetails: true,  // Show details in response
     logErrors: true,            // Log to logger
@@ -95,9 +95,9 @@ $app->addErrorMiddleware(
 | `EndpointMiddleware` | Executes matched route handler |
 
 ```php
-// Required for routing to work
+// AppFactory::create() installs routing automatically.
+// With defaults disabled, add routing after your other middleware:
 $app->addRoutingMiddleware();
-// Internally adds: RoutingMiddleware + EndpointMiddleware
 ```
 
 ### HTTP Utilities
@@ -106,26 +106,25 @@ $app->addRoutingMiddleware();
 |------------|---------|
 | `HeadMethodMiddleware` | Removes body for HEAD requests |
 | `MethodOverrideMiddleware` | Allows `_method` / `X-Http-Method-Override` |
-| `ContentLengthMiddleware` | Adds Content-Length header |
+| `ContentLengthMiddleware` | Adds Content-Length for known body sizes, except on HTTP 204 |
 | `OutputBufferingMiddleware` | Captures output buffering |
-| `ResponseFactoryMiddleware` | Creates empty response for handler |
+| `ResponseFactoryMiddleware` | Short-circuits the pipeline with an empty response |
 | `BasePathMiddleware` | Handles subdirectory deployments |
 
 ```php
-$app->add(\Point\Middleware\HeadMethodMiddleware::class);
+// Optional global middleware. HEAD suppression is already built into App.
 $app->add(\Point\Middleware\MethodOverrideMiddleware::class);
 $app->add(\Point\Middleware\ContentLengthMiddleware::class);
 $app->add(\Point\Middleware\OutputBufferingMiddleware::class);
-$app->add(\Point\Middleware\ResponseFactoryMiddleware::class);
 $app->add(\Point\Middleware\BasePathMiddleware::class);
 ```
 
 ### Body Parsers
 
 ```php
-$app->add(\Point\Middleware\JsonBodyParserMiddleware::class);
-$app->add(\Point\Middleware\XmlBodyParserMiddleware::class);
-$app->add(\Point\Middleware\FormUrlEncodedBodyParserMiddleware::class);
+$app->add(new \Point\Middleware\JsonBodyParserMiddleware());
+$app->add(new \Point\Middleware\XmlBodyParserMiddleware()); // Requires SimpleXML
+$app->add(new \Point\Middleware\FormBodyParserMiddleware());
 ```
 
 Parse request body into `$request->getParsedBody()`.
@@ -144,6 +143,8 @@ $app->add(MyMiddleware::class); // Resolved with dependencies
 
 ## Accessing Route Information
 
+Attach this middleware to a route or group so it runs after route matching.
+
 ```php
 use Point\Routing\RouteMatch;
 
@@ -155,7 +156,7 @@ class MyMiddleware implements MiddlewareInterface
         
         if ($routeMatch && $routeMatch->isFound()) {
             $route = $routeMatch->getRoute();
-            $routeName = $route->getName();
+            $routeName = $route->getName() ?? $route->getPattern();
             $arguments = $routeMatch->getArguments();
             
             // Add route info to response headers
@@ -175,13 +176,17 @@ Return a response early without calling `$handler->handle()`:
 ```php
 class AuthMiddleware implements MiddlewareInterface
 {
+    public function __construct(
+        private \Psr\Http\Message\ResponseFactoryInterface $responses,
+        private \Closure $isAuthenticated,
+    ) {}
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if (! $this->isAuthenticated($request)) {
-            $response = $handler->handle($request); // Or create custom response
-            return $response->withStatus(401)
-                ->withHeader('Content-Type', 'application/json')
-                ->withBody(json_encode(['error' => 'Unauthorized']));
+        if (! ($this->isAuthenticated)($request)) {
+            $response = $this->responses->createResponse(401);
+            $response->getBody()->write('{"error":"Unauthorized"}');
+            return $response->withHeader('Content-Type', 'application/json');
         }
         
         return $handler->handle($request);
@@ -194,18 +199,14 @@ class AuthMiddleware implements MiddlewareInterface
 ```php
 class SafeMiddleware implements MiddlewareInterface
 {
+    public function __construct(private \Psr\Http\Message\ResponseFactoryInterface $responses) {}
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         try {
             return $handler->handle($request);
-        } catch (\Throwable $e) {
-            // Log error
-            // Return custom error response
-            $response = $handler->handle($request); // Won't work, handler already threw
-            // Instead, create new response:
-            $factory = $request->getAttribute(\Psr\Http\Message\ResponseFactoryInterface::class);
-            // Or get from container
-            return $response->withStatus(500);
+        } catch (\Throwable) {
+            return $this->responses->createResponse(500);
         }
     }
 }
@@ -216,19 +217,19 @@ class SafeMiddleware implements MiddlewareInterface
 ## Testing Middleware
 
 ```php
-use Point\Factory\AppFactory;
+use HttpSoft\Message\ResponseFactory;
+use HttpSoft\Message\ServerRequestFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-$app = AppFactory::create();
-$middleware = $app->getContainer()->get(MyMiddleware::class);
+$middleware = new TimingMiddleware();
 
-$request = $factory->createServerRequest('GET', '/');
+$request = (new ServerRequestFactory())->createServerRequest('GET', '/');
 $handler = new class implements RequestHandlerInterface {
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $factory->createResponse(200);
+        return (new ResponseFactory())->createResponse(200);
     }
 };
 

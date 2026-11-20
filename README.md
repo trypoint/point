@@ -2,7 +2,7 @@
 
 **Point is a lightweight, modular PHP microframework built for flexibility and extensibility.**
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.4.27%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-8.4%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 [![Build Status](https://github.com/trypoint/point/actions/workflows/ci.yml/badge.svg)](https://github.com/trypoint/point/actions/workflows/ci.yml)
 
@@ -18,7 +18,7 @@
 - **Error handling** with detailed stack traces in development
 - **Default PSR-7 implementation** via httpsoft (no additional packages required)
 - **Optional PSR-7 implementations** via nyholm/psr7, laminas/laminas-diactoros, guzzlehttp/psr7
-- **PHP 8.4.27 / 8.5** native with strict typing
+- **PHP 8.4 / 8.5** native with strict typing
 
 ---
 
@@ -26,7 +26,7 @@
 
 - **PHP** >= 8.4.27
 - **Composer** 2.x
-- **Extensions**: `mbstring`, `json` (standard in PHP 8.4+)
+- **Optional XML middleware** requires SimpleXML for request parsing or DOM for error rendering.
 
 ---
 
@@ -57,11 +57,11 @@ composer require guzzlehttp/psr7
 ```php
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Point\Factory\AppFactory;
 
-// Create application with default error handling and routing middleware
+// Create application
 $app = AppFactory::create();
 
 // GET route
@@ -76,6 +76,16 @@ $app->get('/user/{id}', function ($request, $response, array $args) {
     return $response;
 });
 
+// JSON response
+$app->get('/api/users', function ($request, $response) {
+    $data = [
+        ['id' => 1, 'name' => 'Alice'],
+        ['id' => 2, 'name' => 'Bob'],
+    ];
+    $response->getBody()->write(json_encode($data));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 // Run the application
 $app->run();
 ```
@@ -87,8 +97,6 @@ php -S localhost:8080 -t public
 ```
 
 Visit `http://localhost:8080/` to see the response.
-
-> **Advanced configuration:** For advanced use cases, disable automatic defaults with `$app->withDefaults(false)` and manually register error handling and routing middleware via `$app->addErrorMiddleware()` and `$app->addRoutingMiddleware()`.
 
 ---
 
@@ -124,11 +132,11 @@ $app->get('/users/{id:\d+}', $handler); // Only digits
 ### Route Groups
 
 ```php
-$app->group('/api', function ($group) {
+$app->group('/api', function ($group) use ($handler) {
     $group->get('/users', $handler);
     $group->post('/users', $handler);
     
-    $group->group('/v1', function ($group) {
+    $group->group('/v1', function ($group) use ($handler) {
         $group->get('/posts', $handler);
     });
 });
@@ -139,7 +147,7 @@ $app->group('/api', function ($group) {
 ```php
 $app->get('/admin', $handler)->add($authMiddleware);
 
-$app->group('/api', function ($group) {
+$app->group('/api', function ($group) use ($rateLimitMiddleware, $handler) {
     $group->add($rateLimitMiddleware);
     $group->get('/users', $handler);
 });
@@ -151,8 +159,12 @@ $app->group('/api', function ($group) {
 $route = $app->get('/user/{id}', $handler)->setName('user.profile');
 
 $urlGenerator = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
-$url = $urlGenerator->generate('user.profile', ['id' => 123]); // /user/123
+$url = $urlGenerator->urlFor('user.profile', ['id' => 123]); // /user/123
 ```
+
+Pass raw parameter values. Point percent-encodes each substituted value.
+Encoded slashes (`%2F` and `%2f`) in request paths return HTTP 404.
+Use separate route segments for values that span a slash.
 
 ---
 
@@ -183,7 +195,7 @@ class ExampleMiddleware implements MiddlewareInterface
 
 // Add to application
 $app->add(new ExampleMiddleware());
-$app->add(ExampleMiddleware::class); // Resolved from container
+// Alternatively, register ExampleMiddleware::class in the container and add it by ID.
 ```
 
 ### Built-in Middleware
@@ -200,9 +212,9 @@ $app->add(ExampleMiddleware::class); // Resolved from container
 | `ExceptionLoggingMiddleware` | Logs exceptions via PSR-3 logger |
 | `HeadMethodMiddleware` | Removes body for HEAD requests |
 | `MethodOverrideMiddleware` | Allows `_method` parameter override |
-| `ContentLengthMiddleware` | Adds Content-Length header |
+| `ContentLengthMiddleware` | Adds Content-Length for known body sizes, except on HTTP 204 |
 | `OutputBufferingMiddleware` | Captures output buffering |
-| `ResponseFactoryMiddleware` | Creates empty response for handler |
+| `ResponseFactoryMiddleware` | Short-circuits the pipeline with an empty response |
 | `BasePathMiddleware` | Handles subdirectory deployments |
 
 ### Error Handling
@@ -306,7 +318,7 @@ composer test:all
 
 Requires development dependencies:
 ```bash
-composer install --dev
+composer install
 ```
 
 ---

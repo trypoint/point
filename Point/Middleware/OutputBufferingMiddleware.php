@@ -75,7 +75,7 @@ final class OutputBufferingMiddleware implements MiddlewareInterface
             throw $e;
         }
 
-        if (! empty($output)) {
+        if ($output !== '') {
             if ($this->style === self::PREPEND) {
                 $body = $this->streamFactory->createStream();
                 $body->write($output . $response->getBody());

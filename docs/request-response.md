@@ -169,9 +169,9 @@ $container->set(UriFactoryInterface::class, $psr17);
 Enable automatic body parsing:
 
 ```php
-$app->add(\Point\Middleware\JsonBodyParserMiddleware::class);
-$app->add(\Point\Middleware\XmlBodyParserMiddleware::class);
-$app->add(\Point\Middleware\FormUrlEncodedBodyParserMiddleware::class);
+$app->add(new \Point\Middleware\JsonBodyParserMiddleware());
+$app->add(new \Point\Middleware\XmlBodyParserMiddleware()); // Requires SimpleXML
+$app->add(new \Point\Middleware\FormBodyParserMiddleware());
 ```
 
 Then in handlers:

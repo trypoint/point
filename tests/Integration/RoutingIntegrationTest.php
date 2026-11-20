@@ -10,8 +10,10 @@ declare(strict_types=1);
 
 namespace Point\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Point\Factory\AppFactory;
+use Point\Interfaces\UrlGeneratorInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -109,7 +111,7 @@ final class RoutingIntegrationTest extends TestCase
         $app = AppFactory::create();
         $app->addRoutingMiddleware();
         $app->get('/user/{id}', static fn($req, $res) => $res)->setName('user.profile');
-        $generator = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
+        $generator = $app->getContainer()->get(UrlGeneratorInterface::class);
 
         $url = $generator->urlFor('user.profile', ['id' => '123']);
         self::assertEquals('/user/123', $url);
@@ -120,10 +122,66 @@ final class RoutingIntegrationTest extends TestCase
         $app = AppFactory::create();
         $app->addRoutingMiddleware();
         $app->get('/search', static fn($req, $res) => $res)->setName('search');
-        $generator = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
+        $generator = $app->getContainer()->get(UrlGeneratorInterface::class);
 
         $url = $generator->urlFor('search', [], ['q' => 'test', 'page' => '2']);
         self::assertEquals('/search?q=test&page=2', $url);
+    }
+
+    public static function routeParameters() : iterable
+    {
+        yield 'space' => ['a b', 'a%20b'];
+        yield 'question mark' => ['a?b', 'a%3Fb'];
+        yield 'hash' => ['a#b', 'a%23b'];
+        yield 'percent' => ['a%b', 'a%25b'];
+        yield 'literal encoded slash' => ['%2F', '%252F'];
+        yield 'UTF-8 and plus' => ['café+', 'caf%C3%A9%2B'];
+    }
+
+    #[DataProvider('routeParameters')]
+    public function testRouteParameterEncodingRoundTrips(string $value, string $encoded) : void
+    {
+        $app = AppFactory::create();
+        $app->get('/item/{id}[/details]', static function ($request, $response, $args) {
+            $response->getBody()->write($args['id']);
+
+            return $response;
+        })->setName('item');
+        $generator = $app->getContainer()->get(UrlGeneratorInterface::class);
+        $url = $generator->urlFor('item', ['id' => $value], ['view' => 'short']);
+
+        self::assertSame('/item/' . $encoded . '/details?view=short', $url);
+        $response = $app->handle($this->createRequest('GET', $url));
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame($value, (string)$response->getBody());
+    }
+
+    public function testEncodedSlashCannotIntroducePathSegments() : void
+    {
+        $app = AppFactory::create();
+        $app->get('/item/{id}', static fn($request, $response) => $response);
+        $app->get('/item/{category}/{id}', static fn($request, $response) => $response);
+
+        foreach (['/item/a%2Fb', '/item/a%2fb'] as $path) {
+            self::assertSame(404, $app->handle($this->createRequest('GET', $path))->getStatusCode());
+        }
+        self::assertSame(200, $app->handle($this->createRequest('GET', '/item/a/b'))->getStatusCode());
+    }
+
+    public function testRouteRenameUpdatesDuplicateWinnerWithoutAnotherLookup() : void
+    {
+        $app = AppFactory::create();
+        $handler = static fn($request, $response) => $response;
+        $earlier = $app->get('/earlier', $handler)->setName('original');
+        $app->get('/later', $handler)->setName('shared');
+        $generator = $app->getContainer()->get(UrlGeneratorInterface::class);
+
+        self::assertSame('/later', $generator->urlFor('shared'));
+        $earlier->setName('shared');
+        self::assertSame('/earlier', $generator->urlFor('shared'));
+        $earlier->setName('original');
+        self::assertSame('/later', $generator->urlFor('shared'));
+        self::assertSame('/earlier', $generator->urlFor('original'));
     }
 
     private function createRequest(string $method, string $uri, array $headers = []) : ServerRequestInterface

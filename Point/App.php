@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Point;
 
+use HttpSoft\Message\StreamFactory;
 use Point\Interfaces\EmitterInterface;
 use Point\Interfaces\RouteInterface;
 use Point\Interfaces\RouterInterface;
@@ -17,6 +18,7 @@ use Point\Interfaces\ServerRequestCreatorInterface;
 use Point\Middleware\EndpointMiddleware;
 use Point\Middleware\ErrorExceptionMiddleware;
 use Point\Middleware\ExceptionLoggingMiddleware;
+use Point\Middleware\HeadMethodMiddleware;
 use Point\Middleware\HtmlExceptionMiddleware;
 use Point\Middleware\JsonExceptionMiddleware;
 use Point\Middleware\RoutingMiddleware;
@@ -27,6 +29,7 @@ use Point\Routing\RouteGroup;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
@@ -143,7 +146,9 @@ class App implements RequestHandlerInterface
         $this->errorMiddlewareRegistered = true;
 
         $htmlMiddleware = $this->container->get(HtmlExceptionMiddleware::class)->withErrorDetails($displayErrorDetails);
-        $jsonMiddleware = $this->container->get(JsonExceptionMiddleware::class)->withErrorDetails($displayErrorDetails);
+        $jsonMiddleware = $this->container->get(JsonExceptionMiddleware::class)
+            ->withErrorDetails($displayErrorDetails)
+            ->withHtmlFallback();
 
         $app = $this
             ->add(ErrorExceptionMiddleware::class)
@@ -252,12 +257,20 @@ class App implements RequestHandlerInterface
             return $pipelineRunner->withPipeline($pipeline)->handle($request);
         }
 
+        if (strtoupper($request->getMethod()) === 'HEAD') {
+            $streamFactory = $this->container->has(StreamFactoryInterface::class)
+                ? $this->container->get(StreamFactoryInterface::class)
+                : new StreamFactory();
+
+            return (new HeadMethodMiddleware($streamFactory))->process($request, $this->requestHandler);
+        }
+
         return $this->requestHandler->handle($request);
     }
 
     /**
      * Build the effective middleware pipeline in the correct order:
-     * Error Handling → User Middleware → Routing → Endpoint.
+     * Head Method → Error Handling → User Middleware → Routing → Endpoint.
      *
      * @return array<MiddlewareInterface|callable|string>
      */
@@ -266,10 +279,16 @@ class App implements RequestHandlerInterface
         $existing = $this->router->getMiddleware();
         $effective = [];
 
+        // HeadMethodMiddleware must be outermost to strip body from both
+        // successful responses and error responses
+        $effective[] = HeadMethodMiddleware::class;
+
         if (!$this->errorMiddlewareRegistered) {
             $effective[] = ErrorExceptionMiddleware::class;
             $effective[] = HtmlExceptionMiddleware::class;
-            $effective[] = JsonExceptionMiddleware::class;
+            // Resolve JSON inside the outer HTML middleware's error boundary.
+            $effective[] = fn(ServerRequestInterface $request, RequestHandlerInterface $handler) : ResponseInterface =>
+                $this->container->get(JsonExceptionMiddleware::class)->withHtmlFallback()->process($request, $handler);
             $effective[] = ExceptionLoggingMiddleware::class;
         }
 

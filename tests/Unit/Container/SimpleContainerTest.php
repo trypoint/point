@@ -73,6 +73,47 @@ final class SimpleContainerTest extends TestCase
         self::assertSame('test', $container->get('service'));
     }
 
+    public function testRegisteredNullIsDistinctFromMissingEntry() : void
+    {
+        $container = new SimpleContainer();
+        $container->set('nullable', null);
+
+        self::assertTrue($container->has('nullable'));
+        self::assertNull($container->get('nullable'));
+        self::assertFalse($container->has('missing'));
+    }
+
+    public function testNullFactoryResultIsCachedUntilDefinitionChanges() : void
+    {
+        $container = new SimpleContainer();
+        $calls = 0;
+        $factory = static function () use (&$calls) : null {
+            $calls++;
+
+            return null;
+        };
+        $container->set('nullable', $factory);
+
+        self::assertNull($container->get('nullable'));
+        self::assertNull($container->get('nullable'));
+        self::assertSame(1, $calls);
+
+        $container->set('nullable', $factory);
+        self::assertNull($container->get('nullable'));
+        self::assertSame(2, $calls);
+    }
+
+    public function testNumericStringIdsWorkInConstructorAndSetter() : void
+    {
+        $container = new SimpleContainer(['42' => 'initial', '042' => 'leading zero']);
+
+        self::assertTrue($container->has('42'));
+        self::assertSame('initial', $container->get('42'));
+        $container->set('42', 'updated');
+        self::assertSame('updated', $container->get('42'));
+        self::assertSame('leading zero', $container->get('042'));
+    }
+
     public function testFactoryReceivesContainer() : void
     {
         $container = new SimpleContainer();

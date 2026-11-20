@@ -68,12 +68,16 @@ final class ResponseEmitter implements EmitterInterface
             return true;
         }
         $stream = $response->getBody();
-        $seekable = $stream->isSeekable();
-        if ($seekable) {
+        if ($stream->isSeekable()) {
+            $position = $stream->tell();
             $stream->rewind();
+            $empty = $stream->read(1) === '';
+            $stream->seek($position);
+
+            return $empty;
         }
 
-        return $seekable ? $stream->read(1) === '' : $stream->eof();
+        return $stream->eof();
     }
 
     /**

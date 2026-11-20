@@ -23,6 +23,8 @@ final class JsonExceptionMiddleware implements MiddlewareInterface
 
     private const DEFAULT_TYPE = 'application/json';
 
+    private ?string $alternativeMediaType = null;
+
     private int $jsonOptions = JSON_PRETTY_PRINT
         | JSON_UNESCAPED_SLASHES
         | JSON_PARTIAL_OUTPUT_ON_ERROR
@@ -33,7 +35,7 @@ final class JsonExceptionMiddleware implements MiddlewareInterface
         try {
             return $handler->handle($request);
         } catch (Throwable $exception) {
-            $contentType = $this->detectMediaType($request);
+            $contentType = $this->detectMediaType($request, $this->alternativeMediaType);
 
             if ($contentType === null) {
                 throw $exception;
@@ -41,6 +43,14 @@ final class JsonExceptionMiddleware implements MiddlewareInterface
 
             return $this->createResponse($exception, $this->createPayload($exception), $contentType);
         }
+    }
+
+    public function withHtmlFallback() : self
+    {
+        $clone = clone $this;
+        $clone->alternativeMediaType = 'text/html';
+
+        return $clone;
     }
 
     /**

@@ -27,15 +27,20 @@ This adds (in order, outermost first):
 
 ## Content Negotiation
 
-The error middleware uses the `Accept` header to determine response format:
+The default error stack uses the `Accept` header to choose between JSON and HTML:
 
 | Accept Header | Response Format |
 |---------------|-----------------|
 | `application/json` | JSON |
 | `text/html` | HTML |
-| `application/xml` | XML |
-| `text/plain` | Plain Text |
-| (none) | HTML (default) |
+| (none) | JSON |
+| Unsupported media type | HTML fallback |
+
+Quality values and wildcards affect the choice. A media range with `q=0`
+excludes that format unless a more specific range accepts it. If there is no
+acceptable match and HTML is excluded, Point preserves the error status and
+returns an empty body. XML and plain-text renderers are available as opt-in
+middleware. XML rendering requires the DOM extension.
 
 ```php
 // Request: GET /error Accept: application/json
@@ -60,7 +65,7 @@ $app->addErrorMiddleware(true, true, true);
 ```php
 $app->addErrorMiddleware(false, true, false, $logger);
 // Display: generic message only
-// Log: full details (if logger provided)
+// Log: message without exception context
 ```
 
 ### Custom Logger
@@ -88,8 +93,7 @@ $app->addErrorMiddleware(false, true, true, $logger);
       "code": 0,
       "message": "Database connection failed",
       "file": "/app/src/Database.php",
-      "line": 42,
-      "trace": [...]
+      "line": 42
     }
   ]
 }
@@ -155,7 +159,8 @@ $app->get('/user/{id}', function ($request, $response, array $args) {
         throw new HttpNotFoundException($request);
     }
     
-    return $response->withJson($user);
+    $response->getBody()->write(json_encode($user, JSON_THROW_ON_ERROR));
+    return $response->withHeader('Content-Type', 'application/json');
 });
 
 $app->post('/users', function ($request, $response) {
@@ -176,55 +181,24 @@ Automatically thrown by routing with `Allow` header:
 $app->get('/users', $handler);
 
 // POST /users → 405 Method Not Allowed
-// Response header: Allow: GET
+// Response header: Allow: GET, HEAD
 ```
 
 ## Custom Exception Handling
 
-### Custom Exception Renderer
+Add middleware that catches the exceptions you want to render. Register it
+before explicit routing, or let the default stack add routing after it.
 
 ```php
-use Point\Interfaces\ExceptionRendererInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Throwable;
+$responses = $app->getContainer()->get(\Psr\Http\Message\ResponseFactoryInterface::class);
 
-class CustomExceptionRenderer implements ExceptionRendererInterface
-{
-    public function render(Throwable $exception, ServerRequestInterface $request, bool $displayErrorDetails): ResponseInterface
-    {
-        // Custom rendering logic
-        $response = $request->getAttribute(\Psr\Http\Message\ResponseFactoryInterface::class)
-            ->createResponse(500);
-        
-        $response->getBody()->write('Custom error: ' . $exception->getMessage());
-        
-        return $response->withHeader('Content-Type', 'text/plain');
-    }
-}
-
-// Register in container
-$container->set(\Point\Interfaces\ExceptionRendererInterface::class, CustomExceptionRenderer::class);
-```
-
-### Catch All Exceptions
-
-```php
-$app->add(function ($request, $handler) {
+$app->add(static function ($request, $handler) use ($responses) {
     try {
         return $handler->handle($request);
-    } catch (HttpNotFoundException $e) {
-        // Custom 404 handling
-        return $response->withStatus(404)->withJson(['error' => 'Not found']);
-    } catch (HttpMethodNotAllowedException $e) {
-        // Custom 405 handling
-        return $response->withStatus(405)
-            ->withHeader('Allow', implode(', ', $e->getAllowedMethods()))
-            ->withJson(['error' => 'Method not allowed']);
-    } catch (\Throwable $e) {
-        // Log and re-throw for error middleware
-        $this->logger->error($e->getMessage(), ['exception' => $e]);
-        throw $e;
+    } catch (\Point\Exception\HttpNotFoundException) {
+        $response = $responses->createResponse(404);
+        $response->getBody()->write('{"error":"Not found"}');
+        return $response->withHeader('Content-Type', 'application/json');
     }
 });
 ```
@@ -236,7 +210,6 @@ $app->add(function ($request, $handler) {
 ```php
 // These become ErrorException and are handled by error middleware
 trigger_error('Custom warning', E_USER_WARNING);
-trigger_error('Custom error', E_USER_ERROR);
 trigger_error('Custom notice', E_USER_NOTICE);
 
 // Silenced errors (@) are ignored
@@ -278,7 +251,7 @@ $app->get('/error', function () {
 });
 
 $factory = new Psr17Factory();
-$request = $factory->createServerRequest('GET', '/error', ['Accept' => 'application/json']);
+$request = $factory->createServerRequest('GET', '/error')->withHeader('Accept', 'application/json');
 $response = $app->handle($request);
 
 assert($response->getStatusCode() === 500);

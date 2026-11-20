@@ -27,24 +27,24 @@ use Psr\Container\NotFoundExceptionInterface;
 final class SimpleContainer implements ContainerInterface
 {
     /**
-     * @var array<string, callable(ContainerInterface): mixed|object|array|string|int|float|bool|null>
+     * @var array<array-key, callable(ContainerInterface): mixed|object|array|string|int|float|bool|null>
      */
     /** @phpstan-ignore missingType.iterableValue */
     private array $definitions = [];
 
     /**
-     * @var array<string, mixed>
+     * @var array<array-key, mixed>
      */
     private array $instances = [];
 
     /**
-     * @param array<string, callable(ContainerInterface): mixed|object|array|string|int|float|bool|null> $definitions
+     * @param array<array-key, callable(ContainerInterface): mixed|object|array|string|int|float|bool|null> $definitions
      */
     /** @phpstan-ignore missingType.iterableValue */
     public function __construct(array $definitions = [])
     {
         foreach ($definitions as $id => $definition) {
-            $this->set($id, $definition);
+            $this->set((string)$id, $definition);
         }
     }
 
@@ -62,7 +62,7 @@ final class SimpleContainer implements ContainerInterface
             };
         }
 
-        if (isset($this->instances[$id])) {
+        if (array_key_exists($id, $this->instances)) {
             return $this->instances[$id];
         }
 
@@ -84,7 +84,7 @@ final class SimpleContainer implements ContainerInterface
      */
     public function has(string $id) : bool
     {
-        return isset($this->definitions[$id]) || isset($this->instances[$id]);
+        return array_key_exists($id, $this->definitions);
     }
 
     /**

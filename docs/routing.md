@@ -49,12 +49,12 @@ $app->get('/post/{slug:[a-z0-9-]+}', $handler); // Alphanumeric + dash
 Group routes with a common prefix:
 
 ```php
-$app->group('/api', function ($group) {
+$app->group('/api', function ($group) use ($handler, $authMiddleware) {
     $group->get('/users', $handler);
     $group->post('/users', $handler);
     
     // Nested groups
-    $group->group('/v1', function ($group) {
+    $group->group('/v1', function ($group) use ($handler) {
         $group->get('/posts', $handler);
     });
     
@@ -74,10 +74,21 @@ $route = $app->get('/user/{id}', $handler)->setName('user.profile');
 // Generate URLs
 $urlGenerator = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
 
-$url = $urlGenerator->generate('user.profile', ['id' => 123]);     // /user/123
-$url = $urlGenerator->generate('user.profile', ['id' => 123], []); // /user/123
-$url = $urlGenerator->generate('search', [], ['q' => 'test']);     // /search?q=test
+$url = $urlGenerator->urlFor('user.profile', ['id' => 123]);   // /user/123
+$url = $urlGenerator->urlFor('user.profile', ['id' => 'a b']); // /user/a%20b
+$url = $urlGenerator->urlFor('search', [], ['q' => 'test']);  // /search?q=test
 ```
+
+Pass unencoded values to `urlFor()`. It percent-encodes each substituted value
+and leaves the route pattern's delimiters unchanged. The router decodes the
+request path once before matching. Percent-encoded slashes (`%2F` or `%2f`)
+are unsupported and return HTTP 404. Define separate route segments for values
+that span a slash. A literal value of `%2F` is encoded as `%252F` and decoded
+once back to the literal text `%2F`.
+
+Use unique route names when possible. Duplicate names resolve to the first
+matching route in FastRoute's collector traversal. Renames take effect on the
+next URL lookup.
 
 ### Route Methods
 
@@ -124,21 +135,22 @@ $app->get('/admin', $handler)
     ->add($rateLimitMiddleware);
 
 // Group middleware (applies to all routes in group)
-$app->group('/api', function ($group) {
+$app->group('/api', function ($group) use ($rateLimitMiddleware, $handler) {
     $group->add($authMiddleware);
     $group->get('/users', $handler);
     $group->post('/users', $handler);
 });
 ```
 
-## Execution Order
+## Execution Order with Default Middleware
 
 ```
-1. Global middleware (added via $app->add())
-2. Error middleware (outermost)
-3. Group middleware (parent to child)
-4. Route middleware (specific to route)
-5. EndpointMiddleware (executes handler)
+1. HEAD and error handling
+2. Global middleware (added via $app->add())
+3. Routing and endpoint dispatch
+4. Group middleware (parent to child)
+5. Route middleware (specific to route)
+6. Route handler
 ```
 
 ## Accessing Route Data in Middleware
@@ -178,13 +190,15 @@ $collector = $router->getRouteCollector();
 
 ## HTTP Method Override
 
-Enable `_method` parameter override for forms:
+Enable form method overrides by parsing the form before running method override middleware:
 
 ```php
+$app->add(new \Point\Middleware\FormBodyParserMiddleware());
 $app->add(\Point\Middleware\MethodOverrideMiddleware::class);
 ```
 
-Now `POST /users?_method=DELETE` is treated as `DELETE /users`.
+A `POST /users` with `_method=DELETE` in its URL-encoded request body is routed as
+`DELETE /users`. Clients can also use the `X-HTTP-Method-Override` request header.
 
 ---
 

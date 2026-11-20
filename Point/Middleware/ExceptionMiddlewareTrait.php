@@ -76,49 +76,100 @@ trait ExceptionMiddlewareTrait
         return $clone;
     }
 
-    private function createResponse(Throwable $exception, string $payload, string $contentType) : ResponseInterface
+    private function createResponse(Throwable $exception, string $payload, ?string $contentType) : ResponseInterface
     {
-        $code = $exception->getCode();
-        $statusCode = ($code >= 100 && $code <= 599) ? $code : 500;
+        $statusCode = 500;
 
-        $response = $this->responseFactory
-            ->createResponse($statusCode)
-            ->withHeader('Content-Type', $contentType);
+        if ($exception instanceof HttpException) {
+            $code = $exception->getCode();
+            if ($code >= 100 && $code <= 599) {
+                $statusCode = $code;
+            }
+        }
 
-        $response->getBody()->write($payload);
+        $response = $this->responseFactory->createResponse($statusCode);
+        if ($contentType !== null) {
+            $response = $response->withHeader('Content-Type', $contentType);
+            $response->getBody()->write($payload);
+        }
 
         if ($exception instanceof HttpMethodNotAllowedException) {
-            $allowedMethods = implode(', ', $exception->getAllowedMethods());
-            $response = $response->withHeader('Allow', $allowedMethods);
+            $allowedMethods = $exception->getAllowedMethods();
+            if (in_array('GET', $allowedMethods, true) && ! in_array('HEAD', $allowedMethods, true)) {
+                $allowedMethods[] = 'HEAD';
+            }
+            $response = $response->withHeader('Allow', implode(', ', $allowedMethods));
         }
 
         return $response;
     }
 
-    private function detectMediaType(ServerRequestInterface $request) : ?string
+    private function detectMediaType(ServerRequestInterface $request, ?string $alternative = null) : ?string
     {
         $accept = $request->getHeaderLine('Accept');
 
-        // If no Accept header, default to DEFAULT_TYPE
         if ($accept === '') {
             return self::DEFAULT_TYPE;
         }
 
-        // Performance optimized for most cases
-        if ($accept === self::DEFAULT_TYPE || isset($this->mimeTypes['*/*'])) {
-            return self::DEFAULT_TYPE;
-        }
-
-        // Parses complex Accept headers
-        $mimeTypes = $this->parseAcceptHeader($accept);
-
-        foreach ($mimeTypes as $type) {
-            if (isset($this->mimeTypes[$type])) {
-                return $type;
+        $best = $alternative === null ? null : $this->mediaPreference($accept, $alternative);
+        $selected = null;
+        $catchAll = isset($this->mimeTypes['*/*']);
+        $types = $catchAll ? [self::DEFAULT_TYPE] : array_keys($this->mimeTypes);
+        foreach ($types as $type) {
+            if (! is_string($type)) {
+                continue;
+            }
+            $preference = $this->mediaPreference($accept, $type);
+            if ($catchAll && $preference === null && ($best[0] ?? 0.0) === 0.0) {
+                // An explicit catch-all can render unmatched ranges, but cannot override an exclusion.
+                $preference = $this->mediaPreference($accept, $type, allowUnmatched: true);
+            }
+            if ($preference !== null && $preference[0] > 0 && ($best === null || $preference > $best)) {
+                $best = $preference;
+                $selected = $type;
             }
         }
 
-        return null;
+        return $selected;
+    }
+
+    /**
+     * @return array{float, int, int}|null Quality, specificity, and inverse header position.
+     */
+    private function mediaPreference(string $accept, string $type, bool $allowUnmatched = false) : ?array
+    {
+        $wildcard = substr($type, 0, (int)strpos($type, '/')) . '/*';
+        $best = null;
+        foreach (explode(',', $accept) as $position => $range) {
+            $parameters = explode(';', $range);
+            $rangeType = strtolower(trim(array_shift($parameters)));
+            $specificity = match ($rangeType) {
+                $type => 2,
+                $wildcard => 1,
+                '*/*' => 0,
+                default => $allowUnmatched && str_contains($rangeType, '/') ? 0 : -1,
+            };
+            if ($specificity < 0 || ($best !== null && $specificity < $best[1])) {
+                continue;
+            }
+
+            $quality = 1.0;
+            foreach ($parameters as $parameter) {
+                if (preg_match('/^\s*q\s*=\s*(.*?)\s*$/iD', $parameter, $matches) === 1) {
+                    $quality = preg_match('/^(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)$/D', $matches[1]) === 1
+                        ? (float)$matches[1]
+                        : 0.0;
+                    break;
+                }
+            }
+
+            if ($best === null || $specificity > $best[1] || $quality > $best[0]) {
+                $best = [$quality, $specificity, -$position];
+            }
+        }
+
+        return $best;
     }
 
     private function getErrorDescription(Throwable $exception) : string
