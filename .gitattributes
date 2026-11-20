@@ -20,8 +20,9 @@
 # Exclude test files
 /tests                  export-ignore
 
-# Exclude documentation (keep in repo but not in package)
-/docs                   export-ignore
+# Keep the migration guide linked from the packaged README.
+/docs/*                 export-ignore
+/docs/migration-from-slim.md -export-ignore
 
 # Exclude examples
 /examples               export-ignore

@@ -29,4 +29,21 @@ final class RevisionedRouteCollector extends RouteCollector
     {
         return $this->routeDataGenerator->getRevision();
     }
+
+    public function getGroupPrefix() : string
+    {
+        return $this->currentGroupPrefix;
+    }
+
+    public function withGroupPrefix(string $prefix, callable $register) : void
+    {
+        $previous = $this->currentGroupPrefix;
+        $this->currentGroupPrefix = $prefix;
+
+        try {
+            $register();
+        } finally {
+            $this->currentGroupPrefix = $previous;
+        }
+    }
 }

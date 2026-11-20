@@ -23,7 +23,7 @@ final class Router implements RouterInterface, RequestHandlerInterface
 
     private ?string $basePath = null;
 
-    private RouteCollector $collector;
+    private RevisionedRouteCollector $collector;
 
     private PipelineRunner $pipelineRunner;
 
@@ -45,8 +45,8 @@ final class Router implements RouterInterface, RequestHandlerInterface
 
     public function group(string $path, callable $handler) : RouteGroup
     {
-        $routeGroup = new RouteGroup($path, $handler, $this->getRouteCollector());
-        $this->collector->addGroup($path, $routeGroup);
+        $routeGroup = new RouteGroup($this->collector->getGroupPrefix() . $path, $handler, $this->collector);
+        $routeGroup();
 
         return $routeGroup;
     }

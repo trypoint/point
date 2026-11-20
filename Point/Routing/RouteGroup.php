@@ -32,6 +32,8 @@ final class RouteGroup implements MiddlewareCollectionInterface, RouteCollection
 
     private RouteCollector $routeCollector;
 
+    private bool $collecting = false;
+
     public function __construct(
         string $prefix,
         callable $callback,
@@ -46,8 +48,19 @@ final class RouteGroup implements MiddlewareCollectionInterface, RouteCollection
 
     public function __invoke() : void
     {
-        // This will be invoked by FastRoute to collect the route groups
-        ($this->callback)($this);
+        if ($this->routeCollector instanceof RevisionedRouteCollector) {
+            $this->routeCollector->withGroupPrefix($this->prefix, fn() => ($this->callback)($this));
+
+            return;
+        }
+
+        $previous = $this->collecting;
+        $this->collecting = true;
+        try {
+            ($this->callback)($this);
+        } finally {
+            $this->collecting = $previous;
+        }
     }
 
     public function getPrefix() : string
@@ -68,7 +81,11 @@ final class RouteGroup implements MiddlewareCollectionInterface, RouteCollection
         $routePath = $this->prefix . $path;
         $routeGroup = new self($routePath, $handler, $this->routeCollector, $this);
 
-        $this->routeCollector->addGroup($path, $routeGroup);
+        if ($this->routeCollector instanceof RevisionedRouteCollector) {
+            $routeGroup();
+        } else {
+            $this->routeCollector->addGroup($this->registrationPath($path), $routeGroup);
+        }
 
         return $routeGroup;
     }
@@ -82,8 +99,27 @@ final class RouteGroup implements MiddlewareCollectionInterface, RouteCollection
     {
         $routePath = $this->prefix . $path;
         $route = new Route($methods, $routePath, $handler, $this);
-        $this->routeCollector->addRoute($methods, $path, $route);
+        if ($this->routeCollector instanceof RevisionedRouteCollector) {
+            $this->routeCollector->withGroupPrefix(
+                $this->prefix,
+                fn() => $this->routeCollector->addRoute($methods, $path, $route),
+            );
+        } else {
+            $this->routeCollector->addRoute($methods, $this->registrationPath($path), $route);
+        }
 
         return $route;
+    }
+
+    private function registrationPath(string $path) : string
+    {
+        // A plain FastRoute collector applies the prefix of the enclosing Point callback.
+        for ($group = $this; $group !== null; $group = $group->group) {
+            if ($group->collecting) {
+                return substr($this->prefix, strlen($group->prefix)) . $path;
+            }
+        }
+
+        return $this->prefix . $path;
     }
 }

@@ -10,10 +10,12 @@ declare(strict_types=1);
 
 namespace Point\Container\Definition;
 
-use GuzzleHttp\Psr7\ServerRequest;
-use HttpSoft\Message\RequestFactory;
-use Laminas\Diactoros\ResponseFactory;
+use GuzzleHttp\Psr7;
+use HttpSoft\Message;
+use HttpSoft\ServerRequest\ServerRequestCreator as HttpSoftRequestCreator;
+use Laminas\Diactoros;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7Server\ServerRequestCreator as NyholmRequestCreator;
 use Point\Interfaces\DefinitionsInterface;
 use RuntimeException;
 
@@ -24,15 +26,28 @@ use RuntimeException;
 final class HttpDefinitions implements DefinitionsInterface
 {
     /**
-     * Mapping of PSR-17/PSR-7 factory classes to their DI definition providers.
+     * Providers in selection order, with the classes used by their definitions.
      *
-     * @var array<string, string>
+     * @var array<class-string<DefinitionsInterface>, list<class-string>>
      */
     private array $classes = [
-        Psr17Factory::class => NyholmDefinitions::class,
-        ResponseFactory::class => LaminasDefinitions::class,
-        ServerRequest::class => GuzzleDefinitions::class,
-        RequestFactory::class => HttpSoftDefinitions::class,
+        NyholmDefinitions::class => [Psr17Factory::class, NyholmRequestCreator::class],
+        LaminasDefinitions::class => [
+            Diactoros\ResponseFactory::class,
+            Diactoros\ServerRequestFactory::class,
+            Diactoros\StreamFactory::class,
+            Diactoros\UploadedFileFactory::class,
+            Diactoros\UriFactory::class,
+        ],
+        GuzzleDefinitions::class => [Psr7\ServerRequest::class, Psr7\HttpFactory::class],
+        HttpSoftDefinitions::class => [
+            Message\ResponseFactory::class,
+            Message\ServerRequestFactory::class,
+            Message\StreamFactory::class,
+            Message\UploadedFileFactory::class,
+            Message\UriFactory::class,
+            HttpSoftRequestCreator::class,
+        ],
     ];
 
     /**
@@ -44,11 +59,14 @@ final class HttpDefinitions implements DefinitionsInterface
 
     public function getDefinitions() : array
     {
-        foreach ($this->classes as $factory => $definitionClass) {
-            if (call_user_func($this->classExists, $factory)) {
-                /** @var DefinitionsInterface $definitionClass */
-                return (new $definitionClass())->getDefinitions();
+        foreach ($this->classes as $definitionClass => $classes) {
+            foreach ($classes as $class) {
+                if (! ($this->classExists)($class)) {
+                    continue 2;
+                }
             }
+
+            return (new $definitionClass())->getDefinitions();
         }
 
         throw new RuntimeException(

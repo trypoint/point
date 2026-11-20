@@ -102,6 +102,8 @@ Visit `http://localhost:8080/` to see the response.
 
 ## Routing
 
+Moving an existing Slim app? See the [Slim migration guide](docs/migration-from-slim.md).
+
 ### Basic Routes
 
 ```php

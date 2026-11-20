@@ -21,6 +21,7 @@ use Point\Interfaces\DispatcherInterface;
 use Point\Interfaces\RouterInterface;
 use Point\Routing\FastRouteDispatcher;
 use Point\Routing\Route;
+use Point\Routing\RouteGroup;
 use ReflectionProperty;
 
 /**
@@ -28,6 +29,51 @@ use ReflectionProperty;
  */
 final class DispatcherInvalidationTest extends TestCase
 {
+    public function testRetainedGroupsKeepPrefixesAfterWarmDispatch() : void
+    {
+        $app = AppFactory::create();
+        $requests = new Psr17Factory();
+        $order = [];
+        $middleware = static function (string $label) use (&$order) : callable {
+            return static function ($request, $handler) use ($label, &$order) {
+                $order[] = $label;
+
+                return $handler->handle($request);
+            };
+        };
+        $handler = static fn($request, $response) => $response;
+        $nested = null;
+        $group = $app->group('/api', static function ($group) use ($handler, &$nested) {
+            $group->get('/inside', $handler);
+            $nested = $group->group('/v1', static function ($version) use ($handler) {
+                $version->get('/inside', $handler);
+            });
+        });
+        $group->add($middleware('api'));
+        $nested->add($middleware('v1'));
+        self::assertSame(200, $app->handle($requests->createServerRequest('GET', '/api/v1/inside'))->getStatusCode());
+        self::assertSame(404, $app->handle($requests->createServerRequest('GET', '/api/later'))->getStatusCode());
+
+        $group->get('/later', $handler)->setName('later');
+        $nested->get('/items/{id}', $handler)->setName('item')->add($middleware('route'));
+        $group->group('/v2', static function ($version) use ($handler) {
+            $version->get('/inside', $handler);
+        });
+
+        $urls = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
+        self::assertSame('/api/later', $urls->urlFor('later'));
+        self::assertSame(200, $app->handle($requests->createServerRequest('GET', $urls->urlFor('later')))->getStatusCode());
+        self::assertSame('/api/v1/items/42', $urls->urlFor('item', ['id' => '42']));
+        $order = [];
+        self::assertSame(200, $app->handle($requests->createServerRequest('GET', $urls->urlFor('item', ['id' => '42'])))->getStatusCode());
+        self::assertSame(['api', 'v1', 'route'], $order);
+        self::assertSame(200, $app->handle($requests->createServerRequest('GET', '/api/v2/inside'))->getStatusCode());
+
+        foreach (['/later', '/v2/inside', '/items/42', '/api/api/later'] as $path) {
+            self::assertSame(404, $app->handle($requests->createServerRequest('GET', $path))->getStatusCode());
+        }
+    }
+
     public function testLateStaticDynamicAndNestedGroupRoutes() : void
     {
         $app = AppFactory::create();
@@ -64,6 +110,45 @@ final class DispatcherInvalidationTest extends TestCase
         self::assertSame(405, $post->getStatusCode());
         self::assertSame('GET, HEAD', $post->getHeaderLine('Allow'));
         self::assertSame(200, $app->handle($requests->createServerRequest('GET', '/initial'))->getStatusCode());
+    }
+
+    public function testPointGroupsAndDirectCollectorGroupsSharePrefixes() : void
+    {
+        $app = AppFactory::create();
+        $requests = new Psr17Factory();
+        $collector = $app->getContainer()->get(RouterInterface::class)->getRouteCollector();
+        $handler = static fn($request, $response) => $response;
+
+        $collector->addGroup('/outer', static function (RouteCollector $collector) use ($app, $handler) {
+            $app->group('/api', static function ($group) use ($collector, $handler) {
+                $group->get('/point', $handler)->setName('point');
+                $collector->get('/raw', new Route(['GET'], '/outer/api/raw', $handler));
+            });
+        });
+
+        $urls = $app->getContainer()->get(\Point\Interfaces\UrlGeneratorInterface::class);
+        self::assertSame('/outer/api/point', $urls->urlFor('point'));
+        self::assertSame(200, $app->handle($requests->createServerRequest('GET', $urls->urlFor('point')))->getStatusCode());
+        self::assertSame(200, $app->handle($requests->createServerRequest('GET', '/outer/api/raw'))->getStatusCode());
+        self::assertSame(404, $app->handle($requests->createServerRequest('GET', '/outer/outer/api/raw'))->getStatusCode());
+    }
+
+    public function testRetainedGroupWorksWithAPlainFastRouteCollector() : void
+    {
+        $collector = new RouteCollector(new Std(), new GroupCountBased());
+        $handler = static fn($request, $response) => $response;
+        $group = new RouteGroup('/api', static function ($group) use ($handler) {
+            $group->get('/inside', $handler);
+        }, $collector);
+        $collector->addGroup('/api', $group);
+        $route = $group->get('/later', $handler);
+        $router = $this->createStub(RouterInterface::class);
+        $router->method('getRouteCollector')->willReturn($collector);
+        $dispatcher = new FastRouteDispatcher($router);
+
+        self::assertSame(DispatcherInterface::FOUND, $dispatcher->dispatch('GET', '/api/inside')[0]);
+        self::assertSame([DispatcherInterface::FOUND, $route, []], $dispatcher->dispatch('GET', '/api/later'));
+        self::assertSame([DispatcherInterface::NOT_FOUND], $dispatcher->dispatch('GET', '/later'));
     }
 
     public function testLateRegistrationThroughCollectorGroupsAliasesAndClone() : void

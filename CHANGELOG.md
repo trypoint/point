@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-alpha.3] - Unreleased
+## [0.1.0-alpha.4] - Unreleased
+
+### Fixed
+
+- Preserve route prefixes when registering through a retained group, including nested groups and routes registered after dispatch has started.
+- Skip incomplete HTTP providers during automatic selection so a Nyholm PSR-7 installation without its server companion can fall back to a complete provider.
+
+### Added
+
+- Add a [Slim migration guide](docs/migration-from-slim.md) covering bootstrap, middleware order, routing, URL generation, containers, and HTTP factories.
+
+## [0.1.0-alpha.3] - 2026-11-20
 
 ### Fixed
 
