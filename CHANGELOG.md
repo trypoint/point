@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-alpha.6] - Unreleased
+
+### Fixed
+
+- Restore PHPUnit discovery of 17 routing tests by moving five test classes into matching files.
+
+### Added
+
+- Add five routing regression tests for duplicate-name precedence, custom route renaming, late registration after lookup, optional URL segments, and base-path URL generation.
+
+### Documentation
+
+- Document named-route lookup costs and defer caching because registration revisions cannot account for every route rename or custom collector change.
+
 ## [0.1.0-alpha.5] - Unreleased
 
 ### Fixed
