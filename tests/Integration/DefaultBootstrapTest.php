@@ -10,11 +10,20 @@ declare(strict_types=1);
 
 namespace Point\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Point\Container\Definition\PointDefinitions;
 use Point\Factory\AppFactory;
+use Point\Interfaces\RouterInterface;
+use Point\Middleware\ErrorExceptionMiddleware;
+use Point\Middleware\ExceptionLoggingMiddleware;
+use Point\Middleware\HtmlExceptionMiddleware;
+use Point\Middleware\JsonExceptionMiddleware;
 use Point\Middleware\RoutingMiddleware;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 
 /**
@@ -69,6 +78,52 @@ final class DefaultBootstrapTest extends TestCase
         $app->handle($request);
 
         self::assertEquals(['custom-before', 'custom-after'], $order);
+    }
+
+    public function testConfiguredRequestHandlerTerminatesTheDefaultPipeline() : void
+    {
+        $accepted = createResponse(202);
+        $accepted->getBody()->write('Accepted');
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::exactly(6))->method('handle')->willReturn($accepted);
+        $separateRouter = AppFactory::create();
+        $separateRouter->add(static fn($request) => $handler->handle($request));
+        $routerHandler = $separateRouter->getContainer()->get(RequestHandlerInterface::class);
+
+        $responses = [];
+        $heads = [];
+        $manual = [];
+        foreach ([$handler, $routerHandler] as $customHandler) {
+            $app = AppFactory::create([RequestHandlerInterface::class => $customHandler]);
+            $app->add(static fn($request, $next) => $next->handle($request)->withHeader('X-Middleware', 'ran'));
+            $app->addRoutingMiddleware();
+            $app->get('/', static fn($request, $response) => $response);
+
+            $responses[] = $app->handle($this->createRequest());
+            $heads[] = $app->handle($this->createRequest('HEAD'));
+            $manual[] = $app->withDefaults(false)->handle($this->createRequest());
+        }
+
+        self::assertSame([202, 202], array_map(static fn($response) => $response->getStatusCode(), $responses));
+        self::assertSame(['ran', 'ran'], array_map(static fn($response) => $response->getHeaderLine('X-Middleware'), $responses));
+        self::assertSame(['Accepted', 'Accepted'], array_map(static fn($response) => (string)$response->getBody(), $responses));
+        self::assertSame([202, 202], array_map(static fn($response) => $response->getStatusCode(), $heads));
+        self::assertSame(['', ''], array_map(static fn($response) => (string)$response->getBody(), $heads));
+        self::assertSame([$accepted, $accepted], $manual);
+    }
+
+    public function testBuiltInRequestHandlerKeepsPointRoutingInBothModes() : void
+    {
+        $app = AppFactory::create();
+        $container = $app->getContainer();
+        self::assertSame($container->get(RouterInterface::class), $container->get(RequestHandlerInterface::class));
+
+        $app->get('/routed', static fn($request, $response) => $response->withStatus(201));
+        $request = $this->createRequest('GET', '/routed');
+        self::assertSame(201, $app->handle($request)->getStatusCode());
+
+        $app->withDefaults(false)->addRoutingMiddleware();
+        self::assertSame(201, $app->handle($request)->getStatusCode());
     }
 
     public function testMiddlewareShortCircuits() : void
@@ -154,7 +209,7 @@ final class DefaultBootstrapTest extends TestCase
         $app->addErrorMiddleware(true, true, true);
         $app->addRoutingMiddleware();
 
-        $router = $app->getContainer()->get(\Point\Interfaces\RouterInterface::class);
+        $router = $app->getContainer()->get(RouterInterface::class);
         $middleware = $router->getMiddleware();
 
         $routingCount = 0;
@@ -186,6 +241,50 @@ final class DefaultBootstrapTest extends TestCase
         self::assertEquals(500, $response->getStatusCode());
         $body = json_decode((string)$response->getBody(), true);
         self::assertArrayHasKey('message', $body);
+    }
+
+    public static function errorMiddlewareFactories() : iterable
+    {
+        yield 'JSON renderer' => [JsonExceptionMiddleware::class];
+        yield 'logger' => [ExceptionLoggingMiddleware::class];
+    }
+
+    #[DataProvider('errorMiddlewareFactories')]
+    public function testFailedErrorRegistrationKeepsDefaultsAndAllowsRetry(string $service) : void
+    {
+        $failure = new RuntimeException('Error middleware configuration failed');
+        $factory = (new PointDefinitions())->getDefinitions()[$service];
+        $attempts = 0;
+        $app = AppFactory::create([
+            $service => static function (ContainerInterface $container) use ($factory, $failure, &$attempts) {
+                if (++$attempts === 1) {
+                    throw $failure;
+                }
+
+                return $factory($container);
+            },
+        ]);
+        $router = $app->getContainer()->get(RouterInterface::class);
+
+        try {
+            $app->addErrorMiddleware();
+            self::fail('Expected the original configuration exception');
+        } catch (RuntimeException $exception) {
+            self::assertSame($failure, $exception);
+        }
+
+        self::assertSame([], $router->getMiddleware());
+        $request = $this->createRequest('GET', '/missing');
+        self::assertSame(404, $app->handle($request)->getStatusCode());
+
+        $app->addErrorMiddleware();
+        self::assertSame([
+            ErrorExceptionMiddleware::class,
+            HtmlExceptionMiddleware::class,
+            JsonExceptionMiddleware::class,
+            ExceptionLoggingMiddleware::class,
+        ], array_map(static fn($entry) => is_object($entry) ? $entry::class : $entry, $router->getMiddleware()));
+        self::assertSame(404, $app->handle($request)->getStatusCode());
     }
 
     public function testExternalContainerDoesNotEnableDefaults() : void

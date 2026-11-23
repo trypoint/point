@@ -14,6 +14,7 @@ use FastRoute\RouteCollector;
 use Point\Interfaces\MiddlewareCollectionInterface;
 use Point\Interfaces\RouteCollectionInterface;
 use Point\Interfaces\RouteInterface;
+use Throwable;
 
 final class RouteGroup implements MiddlewareCollectionInterface, RouteCollectionInterface
 {
@@ -84,7 +85,18 @@ final class RouteGroup implements MiddlewareCollectionInterface, RouteCollection
         if ($this->routeCollector instanceof RevisionedRouteCollector) {
             $routeGroup();
         } else {
-            $this->routeCollector->addGroup($this->registrationPath($path), $routeGroup);
+            $failure = null;
+            $this->routeCollector->addGroup($this->registrationPath($path), static function () use ($routeGroup, &$failure) : void {
+                try {
+                    $routeGroup();
+                } catch (Throwable $exception) {
+                    // Let FastRoute restore its prefix before propagating the callback failure.
+                    $failure = $exception;
+                }
+            });
+            if ($failure !== null) {
+                throw $failure;
+            }
         }
 
         return $routeGroup;

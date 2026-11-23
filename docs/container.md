@@ -82,6 +82,19 @@ $app = AppFactory::create($definitions);
 | `ResponseFactoryInterface::class` | From PSR-17 implementation |
 | `ServerRequestFactoryInterface::class` | From PSR-17 implementation |
 
+Application routes belong to the collector returned by `RouterInterface::getRouteCollector()`. The
+`FastRoute\RouteCollector::class` service can resolve to a separate instance. Use the router's collector
+when accessing the application's routes.
+
+With automatic defaults enabled, a custom `RequestHandlerInterface` service replaces Point's routing
+and endpoint middleware as the final step. Application middleware, error handling, and HEAD response
+handling still wrap the custom handler. With `withDefaults(false)`, the configured handler owns the
+whole request pipeline, and Point still suppresses HEAD response bodies.
+
+Point restores group scope when a callback throws from a nested `RouteGroup::group()` backed by a
+plain FastRoute collector. Routes registered before the exception remain available. Direct calls to a
+custom collector's `addGroup()` follow that collector's own exception behavior.
+
 ### Middleware Definitions
 
 All middleware are registered as container services:

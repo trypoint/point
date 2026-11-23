@@ -10,10 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Restore PHPUnit discovery of 17 routing tests by moving five test classes into matching files.
+- Honor a custom PSR-15 request handler as the endpoint under automatic defaults.
+- Preserve automatic error handling and allow retry when explicit error middleware configuration fails.
+- Restore plain FastRoute collector scope before propagating a nested Point group callback exception.
 
 ### Added
 
 - Add five routing regression tests for duplicate-name precedence, custom route renaming, late registration after lookup, optional URL segments, and base-path URL generation.
+- Add five architecture regression cases for built-in and custom handlers, renderer and logger failure recovery, and nested plain-collector group recovery.
 
 ### Documentation
 

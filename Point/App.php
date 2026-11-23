@@ -26,6 +26,7 @@ use Point\Routing\PipelineRunner;
 use Point\Routing\Route;
 use Point\Routing\RouteCollectionTrait;
 use Point\Routing\RouteGroup;
+use Point\Routing\Router;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -143,17 +144,12 @@ class App implements RequestHandlerInterface
         bool $logErrorDetails = true,
         ?LoggerInterface $logger = null,
     ) : self {
-        $this->errorMiddlewareRegistered = true;
-
         $htmlMiddleware = $this->container->get(HtmlExceptionMiddleware::class)->withErrorDetails($displayErrorDetails);
         $jsonMiddleware = $this->container->get(JsonExceptionMiddleware::class)
             ->withErrorDetails($displayErrorDetails)
             ->withHtmlFallback();
 
-        $app = $this
-            ->add(ErrorExceptionMiddleware::class)
-            ->add($htmlMiddleware)
-            ->add($jsonMiddleware);
+        $middleware = [ErrorExceptionMiddleware::class, $htmlMiddleware, $jsonMiddleware];
 
         if ($logErrors) {
             $loggingMiddleware = $this->container
@@ -166,10 +162,15 @@ class App implements RequestHandlerInterface
 
             // Add logging middleware as the innermost error middleware (closest to handler)
             // so it logs before the rendering middleware
-            $app->add($loggingMiddleware);
+            $middleware[] = $loggingMiddleware;
         }
 
-        return $app;
+        foreach ($middleware as $entry) {
+            $this->add($entry);
+        }
+        $this->errorMiddlewareRegistered = true;
+
+        return $this;
     }
 
     /**
@@ -278,6 +279,10 @@ class App implements RequestHandlerInterface
     {
         $existing = $this->router->getMiddleware();
         $effective = [];
+        $usePointRouting = $this->requestHandler instanceof Router && (
+            $this->requestHandler === $this->router
+            || ($this->container->has(Router::class) && $this->requestHandler === $this->container->get(Router::class))
+        );
 
         // HeadMethodMiddleware must be outermost to strip body from both
         // successful responses and error responses
@@ -294,7 +299,7 @@ class App implements RequestHandlerInterface
 
         foreach ($existing as $middleware) {
             if ($this->isRoutingOrEndpoint($middleware)) {
-                if ($this->routingMiddlewareRegistered) {
+                if ($usePointRouting && $this->routingMiddlewareRegistered) {
                     $effective[] = $middleware;
                 }
             } else {
@@ -302,7 +307,9 @@ class App implements RequestHandlerInterface
             }
         }
 
-        if (!$this->routingMiddlewareRegistered) {
+        if (!$usePointRouting) {
+            $effective[] = fn(ServerRequestInterface $request) : ResponseInterface => $this->requestHandler->handle($request);
+        } elseif (!$this->routingMiddlewareRegistered) {
             $effective[] = RoutingMiddleware::class;
             $effective[] = EndpointMiddleware::class;
         }
