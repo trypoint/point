@@ -20,6 +20,8 @@ use Point\Middleware\ExceptionLoggingMiddleware;
 use Point\Middleware\HtmlExceptionMiddleware;
 use Point\Middleware\JsonExceptionMiddleware;
 use Point\Middleware\RoutingMiddleware;
+use Point\Routing\PipelineRunner;
+use Point\Routing\Router;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -85,31 +87,24 @@ final class DefaultBootstrapTest extends TestCase
         $accepted = createResponse(202);
         $accepted->getBody()->write('Accepted');
         $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::exactly(6))->method('handle')->willReturn($accepted);
-        $separateRouter = AppFactory::create();
-        $separateRouter->add(static fn($request) => $handler->handle($request));
-        $routerHandler = $separateRouter->getContainer()->get(RequestHandlerInterface::class);
+        $handler->expects(self::exactly(3))->method('handle')->willReturn($accepted);
 
-        $responses = [];
-        $heads = [];
-        $manual = [];
-        foreach ([$handler, $routerHandler] as $customHandler) {
-            $app = AppFactory::create([RequestHandlerInterface::class => $customHandler]);
-            $app->add(static fn($request, $next) => $next->handle($request)->withHeader('X-Middleware', 'ran'));
-            $app->addRoutingMiddleware();
-            $app->get('/', static fn($request, $response) => $response);
+        $app = AppFactory::create([RequestHandlerInterface::class => $handler]);
+        $app->add(static fn($request, $next) => $next->handle($request)->withHeader('X-Middleware', 'ran'));
+        $app->addRoutingMiddleware();
+        $app->get('/', static fn($request, $response) => $response);
 
-            $responses[] = $app->handle($this->createRequest());
-            $heads[] = $app->handle($this->createRequest('HEAD'));
-            $manual[] = $app->withDefaults(false)->handle($this->createRequest());
-        }
+        $response = $app->handle($this->createRequest());
+        self::assertSame(202, $response->getStatusCode());
+        self::assertSame('ran', $response->getHeaderLine('X-Middleware'));
+        self::assertSame('Accepted', (string)$response->getBody());
 
-        self::assertSame([202, 202], array_map(static fn($response) => $response->getStatusCode(), $responses));
-        self::assertSame(['ran', 'ran'], array_map(static fn($response) => $response->getHeaderLine('X-Middleware'), $responses));
-        self::assertSame(['Accepted', 'Accepted'], array_map(static fn($response) => (string)$response->getBody(), $responses));
-        self::assertSame([202, 202], array_map(static fn($response) => $response->getStatusCode(), $heads));
-        self::assertSame(['', ''], array_map(static fn($response) => (string)$response->getBody(), $heads));
-        self::assertSame([$accepted, $accepted], $manual);
+        $head = $app->handle($this->createRequest('HEAD'));
+        self::assertSame(202, $head->getStatusCode());
+        self::assertSame('', (string)$head->getBody());
+
+        $manual = $app->withDefaults(false)->handle($this->createRequest());
+        self::assertSame($accepted, $manual);
     }
 
     public function testBuiltInRequestHandlerKeepsPointRoutingInBothModes() : void
@@ -124,6 +119,59 @@ final class DefaultBootstrapTest extends TestCase
 
         $app->withDefaults(false)->addRoutingMiddleware();
         self::assertSame(201, $app->handle($request)->getStatusCode());
+    }
+
+    public function testExplicitAliasToApplicationRouterKeepsPointRouting() : void
+    {
+        $app = AppFactory::create([
+            RequestHandlerInterface::class => static fn(ContainerInterface $container) => $container->get(RouterInterface::class),
+        ]);
+        $app->get('/routed', static fn($request, $response) => $response->withStatus(201));
+
+        self::assertSame(201, $app->handle($this->createRequest('GET', '/routed'))->getStatusCode());
+    }
+
+    public function testIndependentRouterRunsOnceInsideApplicationMiddleware() : void
+    {
+        $order = [];
+        $app = AppFactory::create([
+            RequestHandlerInterface::class => static function (ContainerInterface $container) use (&$order) : Router {
+                $router = new Router($container->get(PipelineRunner::class));
+                $router->add(static function () use (&$order) : ResponseInterface {
+                    $order[] = 'independent';
+                    $response = createResponse(202);
+                    $response->getBody()->write('Accepted');
+
+                    return $response;
+                });
+
+                return $router;
+            },
+        ]);
+        $app->add(static function ($request, $next) use (&$order) : ResponseInterface {
+            $order[] = 'before';
+            $response = $next->handle($request);
+            $order[] = 'after';
+
+            return $response;
+        });
+        $app->addRoutingMiddleware();
+
+        $response = $app->handle($this->createRequest());
+        self::assertSame(202, $response->getStatusCode());
+        self::assertSame('Accepted', (string)$response->getBody());
+        self::assertSame(['before', 'independent', 'after'], $order);
+
+        $order = [];
+        $response = $app->handle($this->createRequest('HEAD'));
+        self::assertSame(202, $response->getStatusCode());
+        self::assertSame('', (string)$response->getBody());
+        self::assertSame(['before', 'independent', 'after'], $order);
+
+        $order = [];
+        $response = $app->withDefaults(false)->handle($this->createRequest());
+        self::assertSame(202, $response->getStatusCode());
+        self::assertSame(['independent'], $order);
     }
 
     public function testMiddlewareShortCircuits() : void

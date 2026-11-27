@@ -94,37 +94,3 @@ final class Psr7FactoryTest extends TestCase
         self::assertTrue($container->has(ServerRequestCreatorInterface::class));
     }
 }
-
-/**
- * @internal
- * @small
- */
-final class ServerRequestCreatorTest extends TestCase
-{
-    public function testCanCreateFromGlobals() : void
-    {
-        $app = AppFactory::create();
-        $container = $app->getContainer();
-        $creator = $container->get(ServerRequestCreatorInterface::class);
-
-        $request = $creator->createServerRequestFromGlobals();
-        self::assertInstanceOf(ServerRequestInterface::class, $request);
-    }
-}
-
-/**
- * @internal
- * @small
- */
-final class ResponseEmitterTest extends TestCase
-{
-    public function testEmitterExists() : void
-    {
-        $app = AppFactory::create();
-        $container = $app->getContainer();
-
-        self::assertTrue($container->has(\Point\Interfaces\EmitterInterface::class));
-        $emitter = $container->get(\Point\Interfaces\EmitterInterface::class);
-        self::assertInstanceOf(\Point\Interfaces\EmitterInterface::class, $emitter);
-    }
-}

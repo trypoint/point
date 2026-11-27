@@ -2,10 +2,7 @@
 
 ## Overview
 
-Point includes a **PSR-11 compatible** dependency injection container (`SimpleContainer`) with:
-- Autowiring via reflection
-- Service definitions as closures
-- Support for external PSR-11 containers (PHP-DI, etc.)
+Point includes a **PSR-11 compatible** dependency injection container (`SimpleContainer`) for explicit instances, values, and factory closures. Point also accepts external PSR-11 containers such as PHP-DI.
 
 ## Default Container
 
@@ -21,50 +18,40 @@ $container = $app->getContainer(); // Point\Container\SimpleContainer
 ### Registering Services
 
 ```php
-// Closure definition (factory)
-$container->set(MyService::class, function ($container) {
-    return new MyService($container->get(OtherService::class));
-});
-
-// Shared instance (singleton)
-$container->set(Database::class, function ($container) {
-    return new Database('mysql:host=localhost;dbname=test', 'user', 'pass');
+// Instance and factory
+$container->set(DateTimeZone::class, new DateTimeZone('UTC'));
+$container->set(DateTimeImmutable::class, static function ($container): DateTimeImmutable {
+    return new DateTimeImmutable('now', $container->get(DateTimeZone::class));
 });
 
 // Value
 $container->set('config.key', 'value');
-
-// Class name (autowiring)
-$container->set(MyService::class); // Creates via autowiring
 ```
 
 ### Retrieving Services
 
 ```php
-$service = $container->get(MyService::class);
+$startedAt = $container->get(DateTimeImmutable::class);
+$sameInstance = $startedAt === $container->get(DateTimeImmutable::class);
 
-// Check existence
-if ($container->has(MyService::class)) {
-    $service = $container->get(MyService::class);
-}
+$registered = $container->has(DateTimeImmutable::class);
+$missing = $container->has(stdClass::class); // false
 ```
+
+Factory results are shared, including a `null` result. Calling `set()` again for an ID replaces its definition and clears the cached result. Class names are service IDs and require explicit registration. Calling `get(stdClass::class)` in the example throws `Psr\Container\NotFoundExceptionInterface`. If a registered factory fails because a dependency is missing, the container reports `Psr\Container\ContainerExceptionInterface` and retains the original exception as its cause.
 
 ## Service Definitions
 
-Point uses **definition arrays** for core services:
+The default bootstrap registers Point's core services and the first complete HTTP provider. Pass a definition array to override specific service IDs.
 
 ```php
-use Point\Container\Definition\PointDefinitions;
-use Point\Container\Definition\HttpDefinitions;
-use Point\Container\Definition\NyholmDefinitions;
+use HttpSoft\Message\ResponseFactory;
+use Point\Factory\AppFactory;
+use Psr\Http\Message\ResponseFactoryInterface;
 
-$definitions = [
-    ...(new PointDefinitions())->getDefinitions(),
-    ...(new HttpDefinitions())->getDefinitions(),
-    ...(new NyholmDefinitions())->getDefinitions(),
-];
-
-$app = AppFactory::create($definitions);
+$app = AppFactory::create([
+    ResponseFactoryInterface::class => new ResponseFactory(),
+]);
 ```
 
 ### Core Definitions
@@ -97,7 +84,7 @@ custom collector's `addGroup()` follow that collector's own exception behavior.
 
 ### Middleware Definitions
 
-All middleware are registered as container services:
+Point registers its default pipeline middleware as container services.
 
 ```php
 // Access middleware from container
@@ -105,43 +92,9 @@ $middleware = $container->get(\Point\Middleware\JsonExceptionMiddleware::class);
 $configured = $middleware->withErrorDetails(true);
 ```
 
-## Autowiring
-
-The container automatically resolves constructor dependencies:
-
-```php
-class UserService
-{
-    public function __construct(
-        private Database $database,
-        private LoggerInterface $logger,
-    ) {}
-}
-
-// No definition needed - autowired
-$userService = $container->get(UserService::class);
-```
-
-### Constructor Parameters
-
-- **Type-hinted services** → Resolved from container
-- **Primitive types** → Must have default or be in definition
-- **Arrays** → Must have default or be in definition
-
-```php
-class MyService
-{
-    public function __construct(
-        private OtherService $service,     // Autowired
-        private string $apiKey = 'default', // Default value
-        private array $options = [],        // Default value
-    ) {}
-}
-```
-
 ## External Containers (PHP-DI)
 
-Point supports any PSR-11 container:
+Install `php-di/php-di` in your application if you want constructor autowiring. PHP-DI can resolve class-typed constructor parameters and accept explicit values for parameters such as an API key.
 
 ```php
 use DI\ContainerBuilder;
@@ -155,11 +108,13 @@ $builder->addDefinitions((new HttpDefinitions())->getDefinitions());
 
 // Add your own definitions
 $builder->addDefinitions([
-    MyService::class => \DI\autowire()->constructorParameter('apiKey', 'secret'),
+    MyService::class => \DI\autowire()->constructorParameter('apiKey', 'example-only'),
 ]);
 
-$app = AppFactory::createFromContainer($builder->build());
+$app = AppFactory::createFromContainer($builder->build())->withDefaults();
 ```
+
+`createFromContainer()` uses the supplied container and leaves automatic middleware defaults disabled until `withDefaults()` is called.
 
 ### PHP-DI Features
 
@@ -167,46 +122,47 @@ $app = AppFactory::createFromContainer($builder->build());
 $builder->addDefinitions([
     // Autowire with specific constructor params
     MyService::class => \DI\autowire()
-        ->constructorParameter('apiKey', 'secret')
+        ->constructorParameter('apiKey', 'example-only')
         ->property('cache', \DI\get(Cache::class)),
     
     // Factory method
     Database::class => \DI\factory([DatabaseFactory::class, 'create']),
     
-    // Singleton (default in PHP-DI)
-    Cache::class => \DI\object()->singleton(),
+    // PHP-DI shares resolved entries by default
+    Cache::class => \DI\autowire(),
 ]);
 ```
 
 ## ContainerResolver
 
-Resolves callables with container dependencies:
+Use `resolve()` to retrieve a service or resolve a method reference. Use `resolveCallable()` when the result must be callable.
 
 ```php
 use Point\Interfaces\ContainerResolverInterface;
 
 $resolver = $container->get(ContainerResolverInterface::class);
 
-// Resolve string class name
-$callable = $resolver->resolve('MyController::method');
+// Retrieve a registered service by ID
+$controller = $resolver->resolve(MyController::class);
 
-// Resolve closure with dependencies
-$callable = $resolver->resolve(function (MyService $service) {
-    return $service->doSomething();
+// Resolve a method on the registered service
+$callable = $resolver->resolveCallable(MyController::class . ':method');
+
+// Resolve a non-static closure with access to the container as $this
+$callable = $resolver->resolveCallable(function () {
+    return $this->get(DateTimeImmutable::class);
 });
 
-// Resolve array callable
+// Resolve an array whose first element is a registered service ID
 $callable = $resolver->resolve([MyController::class, 'method']);
 ```
 
-The resolver:
-1. Resolves class names from container
-2. Injects dependencies into closures via `bindTo($container)`
-3. Handles `Closure::bindTo` for non-static closures
+PHP callables such as public static method references are accepted as callables. In the closure example, `resolveCallable()` binds the non-static closure to the container. The closure looks up its own dependencies and the caller supplies any arguments.
 
 ## Custom Container Factory
 
 ```php
+use Point\Container\DiContainerFactory;
 use Point\Interfaces\ContainerFactoryInterface;
 use Point\Factory\AppFactory;
 
@@ -214,8 +170,10 @@ class MyContainerFactory implements ContainerFactoryInterface
 {
     public function createContainer(array $definitions = []): \Psr\Container\ContainerInterface
     {
-        // Build your custom container
-        return $myContainer;
+        return (new DiContainerFactory())->createContainer(array_replace(
+            ['app.environment' => 'development'],
+            $definitions,
+        ));
     }
 }
 
@@ -248,17 +206,15 @@ $container = $app->getContainer();
 $container->set(Database::class, $mockDatabase);
 $container->set(LoggerInterface::class, $mockLogger);
 
-// Or create test container
-$testContainer = new \Point\Container\SimpleContainer();
-$testContainer->set(MyService::class, $mockService);
-$app = AppFactory::createFromContainer($testContainer);
+// Or override a service when bootstrapping a test app
+$app = AppFactory::create([MyService::class => $mockService]);
 ```
 
 ## Best Practices
 
 1. **Use interfaces** for service contracts
 2. **Register in definitions** for core services
-3. **Use autowiring** for application services
+3. **Register application services explicitly** in SimpleContainer or use optional PHP-DI autowiring
 4. **Keep definitions in separate files** for organization
 5. **Avoid service locator pattern** — inject dependencies instead
 

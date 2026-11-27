@@ -8,6 +8,8 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Point\Emitter\ResponseEmitter;
+use Point\Factory\AppFactory;
+use Point\Interfaces\EmitterInterface;
 use Psr\Http\Message\ResponseInterface;
 
 final class ResponseEmitterTest extends TestCase
@@ -23,6 +25,14 @@ final class ResponseEmitterTest extends TestCase
     protected function setUp(): void
     {
         $this->factory = new Psr17Factory();
+    }
+
+    public function testEmitterExists(): void
+    {
+        $container = AppFactory::create()->getContainer();
+
+        self::assertTrue($container->has(EmitterInterface::class));
+        self::assertInstanceOf(EmitterInterface::class, $container->get(EmitterInterface::class));
     }
 
     public function testEmptyBodyDetected(): void

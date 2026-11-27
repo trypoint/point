@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-alpha.6] - Unreleased
+## [0.1.0-alpha.7] - Unreleased
+
+### Fixed
+
+- Honor an independently configured Router as the PSR-15 endpoint with automatic defaults enabled.
+- Restore PHPUnit discovery of the globals request creator and emitter registration tests.
+
+### Documentation
+
+- Show explicit service definitions in SimpleContainer and optional autowiring with PHP-DI.
+
+## [0.1.0-alpha.6] - 2026-11-23
 
 ### Fixed
 
@@ -23,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Document named-route lookup costs and defer caching because registration revisions cannot account for every route rename or custom collector change.
 
-## [0.1.0-alpha.5] - Unreleased
+## [0.1.0-alpha.5] - 2026-11-20
 
 ### Fixed
 

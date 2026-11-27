@@ -241,22 +241,26 @@ $app->addErrorMiddleware(
 
 ## Dependency Injection
 
-Point includes a **PSR-11 compatible container** (`SimpleContainer`) with autowiring.
+Point includes a **PSR-11 compatible container** (`SimpleContainer`) for explicitly registered values, instances, and factories.
 
 ```php
 $app = AppFactory::create();
 $container = $app->getContainer();
 
-// Register a service
-$container->set(MyService::class, function ($c) {
-    return new MyService($c->get(OtherService::class));
+// Register an instance and a factory that uses it
+$container->set(DateTimeZone::class, new DateTimeZone('UTC'));
+$container->set(DateTimeImmutable::class, static function ($c): DateTimeImmutable {
+    return new DateTimeImmutable('now', $c->get(DateTimeZone::class));
 });
 
-// Get a service
-$service = $container->get(MyService::class);
+$startedAt = $container->get(DateTimeImmutable::class);
 ```
 
+The factory runs on first lookup, and subsequent lookups return the same result. For an unregistered ID, `has()` returns `false` and `get()` throws `Psr\Container\NotFoundExceptionInterface`.
+
 ### Using PHP-DI (Optional)
+
+Use an external PHP-DI container if your application needs constructor autowiring.
 
 ```php
 use DI\ContainerBuilder;
@@ -268,17 +272,17 @@ $builder = new ContainerBuilder();
 $builder->addDefinitions((new PointDefinitions())->getDefinitions());
 $builder->addDefinitions((new HttpDefinitions())->getDefinitions());
 
-$app = AppFactory::createFromContainer($builder->build());
+$app = AppFactory::createFromContainer($builder->build())->withDefaults();
 ```
 
 ---
 
 ## PSR Interoperability
 
-Point works with **any PSR-7/PSR-17 implementation**. By default, **httpsoft** is used:
+Point accepts PSR-7 messages and uses PSR-17 factories for server requests, responses, streams, uploaded files, and URIs. The bundled HttpSoft provider is the fallback. Automatic discovery checks for a complete provider in this order: Nyholm (including `nyholm/psr7-server`), Laminas Diactoros, Guzzle PSR-7, then HttpSoft.
 
 ```php
-// Default (included): httpsoft
+// Bundled HttpSoft provider
 $responseFactory = new \HttpSoft\Message\ResponseFactory();
 $requestFactory = new \HttpSoft\Message\ServerRequestFactory();
 ```
@@ -297,14 +301,15 @@ $requestFactory = new \Laminas\Diactoros\ServerRequestFactory();
 $factory = new \GuzzleHttp\Psr7\HttpFactory();
 ```
 
-Configure in container:
+Pass overrides at bootstrap. Replacing a PSR-17 factory does not replace Point's separate request-from-globals service.
 
 ```php
-$app->getContainer()->set(\Psr\Http\Message\ResponseFactoryInterface::class, $responseFactory);
-$app->getContainer()->set(\Psr\Http\Message\ServerRequestFactoryInterface::class, $requestFactory);
+$app = AppFactory::create([
+    \Psr\Http\Message\ResponseFactoryInterface::class => new \HttpSoft\Message\ResponseFactory(),
+]);
 ```
 
-All framework code uses PSR interfaces — no coupling to a specific implementation.
+Use the provider's own request factory for outbound client requests. Point's built-in definitions bind the five server-side factory interfaces listed above.
 
 ---
 
