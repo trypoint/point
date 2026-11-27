@@ -2,7 +2,9 @@
 
 ## Overview
 
-Point applications can be deployed on any PHP 8.4+ compatible server. This guide covers common deployment scenarios.
+Point requires PHP 8.4.27 or later. Use a server and PHP SAPI configured to route application requests to the front controller.
+
+When deploying behind a reverse proxy, configure the trusted edge to validate the host and strip or overwrite forwarding headers from clients. Point has no built-in trusted-proxy configuration. If the application uses forwarded scheme, host, client address or path information, interpret it only after validating the proxy connection. Configure the application base path explicitly when serving under a URL prefix.
 
 ## PHP Built-in Server (Development Only)
 

@@ -224,11 +224,11 @@ class UserController
 {
     public function __construct(private UserService $userService) {}
     
-    public function show($request, $response, $args) { ... }
+    public function show($request, $response, $args) { /* Use $this->userService. */ }
 }
 
 // Avoid: Service locator
-class UserController
+class ServiceLocatorController
 {
     public function show($request, $response, $args) {
         $service = $this->container->get(UserService::class); // Don't do this

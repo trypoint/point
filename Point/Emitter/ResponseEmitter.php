@@ -42,8 +42,13 @@ final class ResponseEmitter implements EmitterInterface
      */
     public function emit(ResponseInterface $response) : void
     {
-        if ($response->getStatusCode() < 200 && $response->hasHeader('Content-Length')) {
-            $response = $response->withoutHeader('Content-Length');
+        $status = $response->getStatusCode();
+        if ($response->hasHeader('Content-Length')) {
+            if ($status < 200 || $status === 204) {
+                $response = $response->withoutHeader('Content-Length');
+            } elseif ($status === 205) {
+                $response = $response->withHeader('Content-Length', '0');
+            }
         }
 
         $isEmpty = $this->isResponseEmpty($response);

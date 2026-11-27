@@ -14,8 +14,7 @@ composer require trypoint/point
 
 ## PSR-7 Implementation
 
-Point installs HttpSoft as its default PSR-7/PSR-17 implementation. To use a
-different implementation, install its package and configure the application's HTTP factories.
+Point installs HttpSoft as its PSR-7 and PSR-17 fallback. Automatic bootstrap selects the first complete provider it can load in this order: Nyholm, Laminas, Guzzle, HttpSoft. Pass explicit factory definitions to `AppFactory::create($definitions)` when the application needs to select a provider or override an individual service.
 
 ### Nyholm (Recommended)
 

@@ -26,11 +26,8 @@ $container->set(\Psr\Http\Message\ServerRequestFactoryInterface::class, $psr17);
 // Add error handling middleware (development mode)
 $app->addErrorMiddleware(true, true, true);
 
-// Add routing middleware
-$app->addRoutingMiddleware();
-
 // Add JSON body parser for POST requests
-$app->add(\Point\Middleware\JsonBodyParserMiddleware::class);
+$app->add(new \Point\Middleware\JsonBodyParserMiddleware());
 
 // In-memory "database"
 $users = [
@@ -40,7 +37,7 @@ $users = [
 $nextId = 3;
 
 // Helper: JSON response
-$jsonResponse = function ($response, $data, int $status = 200) {
+$jsonResponse = function ($response, $data, int $status = 200) use ($psr17) {
     return $response
         ->withStatus($status)
         ->withHeader('Content-Type', 'application/json')
@@ -53,7 +50,7 @@ $app->get('/api/users', function ($request, $response) use ($users, $jsonRespons
 });
 
 // GET /api/users/{id} - Get single user
-$app->get('/api/users/{id}', function ($request, $response, array $args) use ($users, $jsonResponse, $psr17) {
+$app->get('/api/users/{id}', function ($request, $response, array $args) use ($users, $jsonResponse) {
     $id = (int) $args['id'];
     
     if (! isset($users[$id])) {
@@ -64,7 +61,7 @@ $app->get('/api/users/{id}', function ($request, $response, array $args) use ($u
 });
 
 // POST /api/users - Create new user
-$app->post('/api/users', function ($request, $response) use ($users, $jsonResponse, $psr17, &$nextId) {
+$app->post('/api/users', function ($request, $response) use ($users, $jsonResponse, &$nextId) {
     $data = $request->getParsedBody();
     
     if (! is_array($data)) {

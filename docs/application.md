@@ -115,7 +115,7 @@ $builder = new ContainerBuilder();
 $builder->addDefinitions((new PointDefinitions())->getDefinitions());
 $builder->addDefinitions((new HttpDefinitions())->getDefinitions());
 
-$app = AppFactory::createFromContainer($builder->build());
+$app = AppFactory::createFromContainer($builder->build())->withDefaults();
 ```
 
 ### Custom PSR-17 Factories

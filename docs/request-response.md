@@ -62,21 +62,19 @@ $request->getServerParams();     // $_SERVER data
 
 ### Route Parameters
 
-After routing, parameters are available in attributes:
+Route handlers receive route parameters in their third argument. Matched route data is also available through the RouteMatch request attribute. Add RoutingArgumentsMiddleware to a route or group if its handlers need each argument as a separate request attribute.
 
 ```php
+use Point\Routing\RouteMatch;
+
 $app->get('/user/{id}', function ($request, $response, array $args) {
-    // $args['id'] from route pattern
-    // Also available via:
-    $id = $request->getAttribute('id');
-    
-    // Or via RouteMatch
-    use Point\Routing\RouteMatch;
+    $id = $args['id'];
     $match = $request->getAttribute(RouteMatch::class);
-    $args = $match->getArguments(); // ['id' => '123']
+    $response->getBody()->write((string) $match->getArgument('id', $id));
+
+    return $response;
 });
 ```
-
 ## Response
 
 ### Creating Responses
@@ -126,23 +124,18 @@ $response->getBody()->write(json_encode(['status' => 'ok']));
 ```php
 // In route handlers, the response is injected
 $app->get('/api/users', function ($request, $response) {
-    $data = ['users' => [...]];
-    
+    $data = ['users' => [['id' => 1]]];
+    $response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
+
     return $response
         ->withHeader('Content-Type', 'application/json')
-        ->withHeader('Cache-Control', 'no-cache')
-        ->withStatus(200)
-        ->getBody()->write(json_encode($data));
-    
-    // Or:
-    $response->getBody()->write(json_encode($data));
-    return $response->withHeader('Content-Type', 'application/json');
+        ->withHeader('Cache-Control', 'no-cache');
 });
 ```
 
 ## PSR-17 Factories
 
-Point requires these PSR-17 interfaces:
+Point binds these server-side PSR-17 factory interfaces:
 
 ```php
 use Psr\Http\Message\ResponseFactoryInterface;

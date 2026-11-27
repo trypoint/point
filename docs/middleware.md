@@ -127,7 +127,7 @@ $app->add(new \Point\Middleware\XmlBodyParserMiddleware()); // Requires SimpleXM
 $app->add(new \Point\Middleware\FormBodyParserMiddleware());
 ```
 
-Parse request body into `$request->getParsedBody()`.
+These parsers populate `$request->getParsedBody()` for their supported content types. If configuring the pipeline explicitly, register error middleware first so it can handle parser errors, then register parsers before `addRoutingMiddleware()` so matched handlers receive the parsed request.
 
 ## Middleware from Container
 

@@ -20,6 +20,12 @@ final class ResponseEmitterTest extends TestCase
         yield 'Early Hints' => [103];
     }
 
+    public static function statusesWithoutContentLength(): iterable
+    {
+        yield from self::informationalStatuses();
+        yield 'No Content' => [204];
+    }
+
     private Psr17Factory $factory;
 
     protected function setUp(): void
@@ -91,8 +97,8 @@ final class ResponseEmitterTest extends TestCase
         self::assertTrue($emitter->isResponseEmpty($response));
     }
 
-    #[DataProvider('informationalStatuses')]
-    public function testInformationalResponseDropsExplicitLengthBeforeEmission(int $status): void
+    #[DataProvider('statusesWithoutContentLength')]
+    public function testResponseDropsForbiddenLengthBeforeEmission(int $status): void
     {
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn($status);
@@ -102,6 +108,18 @@ final class ResponseEmitterTest extends TestCase
             ->willReturn($this->factory->createResponse($status));
         $this->expectOutputString('');
 
+        (new ResponseEmitter())->emit($response);
+    }
+
+    public function testResetContentResponseEmitsZeroLengthAndNoBody(): void
+    {
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(205);
+        $response->method('hasHeader')->willReturnCallback(static fn(string $name) => $name === 'Content-Length');
+        $response->expects(self::once())->method('withHeader')->with('Content-Length', '0')
+            ->willReturn($this->factory->createResponse(205)->withBody($this->factory->createStream('hello')));
+
+        $this->expectOutputString('');
         (new ResponseEmitter())->emit($response);
     }
 

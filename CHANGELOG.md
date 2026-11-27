@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-alpha.7] - Unreleased
+## [Unreleased] - 0.1.0-beta.1
+
+### Fixed
+
+- Remove Content-Length when emitting 204 responses and normalize an explicitly supplied length to zero on 205 responses.
+
+### Documentation
+
+- Record the proposed public API and extension contracts.
+- Clarify the PHP minimum, deployment trust boundary, and FIFO parser registration and response creation in the JSON API example.
+
+## [0.1.0-alpha.7] - 2026-11-27
 
 ### Fixed
 
