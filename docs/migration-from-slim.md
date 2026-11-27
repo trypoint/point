@@ -58,7 +58,7 @@ With `AppFactory::create()`, global middleware runs inside the default error han
 
 ## PSR-11 containers and HTTP factories
 
-`AppFactory::create($definitions)` accepts service overrides keyed by class or interface. For an existing PSR-11 container, register Point's definitions and selected HTTP definitions through the container's own configuration mechanism. `createFromContainer()` expects those services and an explicit middleware stack. This standalone example uses Point's small built-in PSR-11 container to show the wiring:
+`AppFactory::create($definitions)` accepts service overrides keyed by class or interface. For an existing PSR-11 container, register Point's definitions and selected HTTP definitions through the container's own configuration mechanism. `createFromContainer()` expects those services. Configure the middleware stack explicitly or call `withDefaults()`. This standalone example uses Point's small built-in PSR-11 container to show the wiring:
 
 ```php
 <?php

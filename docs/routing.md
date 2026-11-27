@@ -176,7 +176,7 @@ $app->setBasePath('/myapp');
 // Routes match against /myapp/users, /myapp/api/v1/posts, etc.
 ```
 
-The `BasePathMiddleware` handles this automatically when added.
+With automatic Point routing enabled, the base path is detected from the front controller directory in the server's SCRIPT_NAME. Use setBasePath() to override detection, including when a proxy hides the public prefix from PHP. For a manually assembled pipeline, register BasePathMiddleware ahead of routing if you want detection.
 
 ## Custom Route Collector
 

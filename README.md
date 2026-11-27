@@ -14,7 +14,7 @@
 - **PSR-11** compatible dependency injection container (built-in, with PHP-DI support)
 - **FastRoute** based routing with dynamic parameters and route groups
 - **Middleware pipeline** with FIFO execution order
-- **Content negotiation** for JSON, HTML, XML, and plain text error responses
+- **Content negotiation** for JSON and HTML error responses, with optional XML and plain-text middleware
 - **Error handling** with detailed stack traces in development
 - **Default PSR-7 implementation** via httpsoft (no additional packages required)
 - **Optional PSR-7 implementations** via nyholm/psr7, laminas/laminas-diactoros, guzzlehttp/psr7
@@ -36,7 +36,7 @@
 composer require trypoint/point
 ```
 
-Point includes **httpsoft/http-message** and **httpsoft/http-server-request** as the default PSR-7/PSR-17 implementation. No additional packages are required.
+Point includes **httpsoft/http-message** and **httpsoft/http-server-request** as the bundled PSR-7/PSR-17 fallback. Automatic discovery can select a complete installed alternative first.
 
 Optional: replace with an alternative PSR-7 implementation:
 ```bash

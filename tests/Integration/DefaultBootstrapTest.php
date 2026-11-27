@@ -12,9 +12,13 @@ namespace Point\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Point\Container\Definition\HttpDefinitions;
 use Point\Container\Definition\PointDefinitions;
+use Point\Container\SimpleContainer;
 use Point\Factory\AppFactory;
 use Point\Interfaces\RouterInterface;
+use Point\Interfaces\UrlGeneratorInterface;
+use Point\Middleware\BasePathMiddleware;
 use Point\Middleware\ErrorExceptionMiddleware;
 use Point\Middleware\ExceptionLoggingMiddleware;
 use Point\Middleware\HtmlExceptionMiddleware;
@@ -34,10 +38,10 @@ use RuntimeException;
  */
 final class DefaultBootstrapTest extends TestCase
 {
-    private function createRequest(string $method = 'GET', string $uri = '/', array $headers = []) : ServerRequestInterface
+    private function createRequest(string $method = 'GET', string $uri = '/', array $headers = [], array $serverParams = []) : ServerRequestInterface
     {
         $factory = new \Nyholm\Psr7\Factory\Psr17Factory();
-        $request = $factory->createServerRequest($method, $uri);
+        $request = $factory->createServerRequest($method, $uri, $serverParams);
         foreach ($headers as $name => $value) {
             $request = $request->withHeader($name, $value);
         }
@@ -59,6 +63,82 @@ final class DefaultBootstrapTest extends TestCase
 
         self::assertEquals(200, $response->getStatusCode());
         self::assertEquals('Hello, World!', (string)$response->getBody());
+    }
+
+    public static function frontControllerMounts() : iterable
+    {
+        yield 'domain root' => ['', '/index.php'];
+        yield 'subdirectory' => ['/point-consumer', '/point-consumer/index.php'];
+        yield 'nested subdirectory' => ['/apps/demo', '/apps/demo/index.php'];
+    }
+
+    #[DataProvider('frontControllerMounts')]
+    public function testDefaultBootstrapDetectsFrontControllerMount(string $mount, string $scriptName) : void
+    {
+        $app = AppFactory::create();
+        $urls = $app->getContainer()->get(UrlGeneratorInterface::class);
+        $app->get('/', static function ($request, $response) use ($urls) {
+            $response->getBody()->write('Hello, World!');
+
+            return $response->withHeader('X-Home', $urls->urlFor('home'));
+        })->setName('home');
+
+        $request = $this->createRequest('GET', $mount . '/', [
+            'X-Forwarded-Prefix' => '/ignored',
+        ], ['SCRIPT_NAME' => $scriptName, 'PHP_SELF' => '/wrong/path/index.php']);
+        $response = $app->handle($request);
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('Hello, World!', (string)$response->getBody());
+        self::assertSame($mount . '/', $response->getHeaderLine('X-Home'));
+        self::assertSame($mount, $app->getBasePath());
+
+        if ($mount !== '') {
+            $outside = $this->createRequest('GET', $mount . '-other/', [], ['SCRIPT_NAME' => $scriptName]);
+            self::assertSame(404, $app->handle($outside)->getStatusCode());
+        }
+    }
+
+    public function testMissingScriptNameDoesNotPinBasePathOrUseForwardedPrefix() : void
+    {
+        $app = AppFactory::create();
+        $app->get('/plain', static fn($request, $response) => $response);
+        $request = $this->createRequest('GET', '/plain', ['X-Forwarded-Prefix' => '/plain'], [
+            'PHP_SELF' => '/plain/index.php',
+        ]);
+        self::assertSame(200, $app->handle($request)->getStatusCode());
+        self::assertSame('', $app->getBasePath());
+
+        $mounted = $this->createRequest('GET', '/mount/plain', [], ['SCRIPT_NAME' => '/mount/index.php']);
+        self::assertSame(200, $app->handle($mounted)->getStatusCode());
+        self::assertSame('/mount', $app->getBasePath());
+    }
+
+    public function testExplicitBasePathWinsWithExplicitRouting() : void
+    {
+        $app = AppFactory::create()->setBasePath('/chosen')->addRoutingMiddleware();
+        $app->get('/', static fn($request, $response) => $response);
+
+        $request = $this->createRequest('GET', '/chosen/', [], ['SCRIPT_NAME' => '/other/index.php']);
+        self::assertSame(200, $app->handle($request)->getStatusCode());
+        self::assertSame('/chosen', $app->getBasePath());
+    }
+
+    public function testExternalContainerCanOptIntoDetectionWithoutDetectorService() : void
+    {
+        $definitions = array_replace(
+            (new PointDefinitions())->getDefinitions(),
+            (new HttpDefinitions())->getDefinitions()
+        );
+        unset($definitions[BasePathMiddleware::class]);
+        $app = AppFactory::createFromContainer(new SimpleContainer($definitions));
+        $app->addErrorMiddleware()->addRoutingMiddleware();
+        $app->get('/', static fn($request, $response) => $response);
+        $request = $this->createRequest('GET', '/mount/', [], ['SCRIPT_NAME' => '/mount/index.php']);
+
+        self::assertSame(404, $app->handle($request)->getStatusCode());
+        self::assertSame('', $app->getBasePath());
+        self::assertSame(200, $app->withDefaults()->handle($request)->getStatusCode());
+        self::assertSame('/mount', $app->getBasePath());
     }
 
     public function testCustomMiddlewareExecutesBeforeRouting() : void
@@ -157,8 +237,9 @@ final class DefaultBootstrapTest extends TestCase
         });
         $app->addRoutingMiddleware();
 
-        $response = $app->handle($this->createRequest());
+        $response = $app->handle($this->createRequest('GET', '/mount/', [], ['SCRIPT_NAME' => '/mount/index.php']));
         self::assertSame(202, $response->getStatusCode());
+        self::assertSame('', $app->getBasePath());
         self::assertSame('Accepted', (string)$response->getBody());
         self::assertSame(['before', 'independent', 'after'], $order);
 
@@ -169,7 +250,7 @@ final class DefaultBootstrapTest extends TestCase
         self::assertSame(['before', 'independent', 'after'], $order);
 
         $order = [];
-        $response = $app->withDefaults(false)->handle($this->createRequest());
+        $response = $app->withDefaults(false)->handle($this->createRequest('GET', '/mount/', [], ['SCRIPT_NAME' => '/mount/index.php']));
         self::assertSame(202, $response->getStatusCode());
         self::assertSame(['independent'], $order);
     }

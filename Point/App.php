@@ -15,6 +15,7 @@ use Point\Interfaces\EmitterInterface;
 use Point\Interfaces\RouteInterface;
 use Point\Interfaces\RouterInterface;
 use Point\Interfaces\ServerRequestCreatorInterface;
+use Point\Middleware\BasePathMiddleware;
 use Point\Middleware\EndpointMiddleware;
 use Point\Middleware\ErrorExceptionMiddleware;
 use Point\Middleware\ExceptionLoggingMiddleware;
@@ -271,7 +272,7 @@ class App implements RequestHandlerInterface
 
     /**
      * Build the effective middleware pipeline in the correct order:
-     * Head Method → Error Handling → User Middleware → Routing → Endpoint.
+     * Head Method → Error Handling → Base Path → User Middleware → Routing → Endpoint.
      *
      * @return array<MiddlewareInterface|callable|string>
      */
@@ -295,6 +296,15 @@ class App implements RequestHandlerInterface
             $effective[] = fn(ServerRequestInterface $request, RequestHandlerInterface $handler) : ResponseInterface =>
                 $this->container->get(JsonExceptionMiddleware::class)->withHtmlFallback()->process($request, $handler);
             $effective[] = ExceptionLoggingMiddleware::class;
+        }
+
+        if ($usePointRouting && ! array_any(
+            $existing,
+            static fn($middleware) => $middleware === BasePathMiddleware::class || $middleware instanceof BasePathMiddleware
+        )) {
+            $effective[] = $this->container->has(BasePathMiddleware::class)
+                ? BasePathMiddleware::class
+                : new BasePathMiddleware($this->router);
         }
 
         foreach ($existing as $middleware) {

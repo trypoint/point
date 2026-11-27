@@ -109,14 +109,14 @@ $app->addRoutingMiddleware();
 | `ContentLengthMiddleware` | Adds Content-Length for known body sizes, except on HTTP 204 |
 | `OutputBufferingMiddleware` | Captures output buffering |
 | `ResponseFactoryMiddleware` | Short-circuits the pipeline with an empty response |
-| `BasePathMiddleware` | Handles subdirectory deployments |
+| `BasePathMiddleware` | Detects the front controller directory when no base path is configured |
 
 ```php
 // Optional global middleware. HEAD suppression is already built into App.
 $app->add(\Point\Middleware\MethodOverrideMiddleware::class);
 $app->add(\Point\Middleware\ContentLengthMiddleware::class);
 $app->add(\Point\Middleware\OutputBufferingMiddleware::class);
-$app->add(\Point\Middleware\BasePathMiddleware::class);
+// With default routing disabled, register BasePathMiddleware before routing to opt into detection.
 ```
 
 ### Body Parsers

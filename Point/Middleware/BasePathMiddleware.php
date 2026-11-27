@@ -30,31 +30,23 @@ final class BasePathMiddleware implements MiddlewareInterface
         $basePath = $this->router->getBasePath();
         if ($basePath === null) {
             $basePath = $this->detectBasePath($request);
-            $this->router->setBasePath($basePath);
+            if ($basePath !== null) {
+                $this->router->setBasePath($basePath);
+            }
         }
 
         return $handler->handle($request);
     }
 
-    /**
-     * Return basePath for most common webservers.
-     */
-    private function detectBasePath(ServerRequestInterface $request) : string
+    private function detectBasePath(ServerRequestInterface $request) : ?string
     {
-        $serverParams = $request->getServerParams();
-        $scriptName = $serverParams['SCRIPT_NAME'] ??
-            $serverParams['PHP_SELF'] ??
-            $serverParams['ORIG_SCRIPT_NAME'] ?? '';
-        $scriptName = str_replace('\\', '/', dirname($scriptName, 2));
-
-        if ($scriptName === '/') {
-            return '';
+        $scriptName = $request->getServerParams()['SCRIPT_NAME'] ?? null;
+        if (! is_string($scriptName) || ! str_starts_with($scriptName, '/')
+            || str_starts_with($scriptName, '//') || str_ends_with($scriptName, '/')
+            || str_contains($scriptName, '\\')) {
+            return null;
         }
 
-        $path = $request->getUri()->getPath();
-        $length = strlen($scriptName);
-        $path = $length > 0 ? substr($path, 0, $length) : $path;
-
-        return strlen($path) > 1 ? $path : '';
+        return substr($scriptName, 0, (int)strrpos($scriptName, '/'));
     }
 }

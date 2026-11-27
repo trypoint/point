@@ -4,7 +4,7 @@
 
 Point requires PHP 8.4.27 or later. Use a server and PHP SAPI configured to route application requests to the front controller.
 
-When deploying behind a reverse proxy, configure the trusted edge to validate the host and strip or overwrite forwarding headers from clients. Point has no built-in trusted-proxy configuration. If the application uses forwarded scheme, host, client address or path information, interpret it only after validating the proxy connection. Configure the application base path explicitly when serving under a URL prefix.
+When deploying behind a reverse proxy, configure the trusted edge to validate the host and strip or overwrite forwarding headers from clients. Point has no built-in trusted-proxy configuration. The selected PSR-7 globals creator can use forwarding fields when building the URI. The bundled HttpSoft creator can use X-Forwarded-Host and X-Forwarded-Proto. Restrict backend access to the trusted edge if you rely on its filtering. If the application uses forwarded scheme, host, client address or path information, interpret it only after validating the proxy connection. Point detects the base path from SCRIPT_NAME when using automatic routing. Configure it explicitly if the public URL prefix differs from the front controller directory seen by PHP, for example when a proxy strips the prefix.
 
 ## PHP Built-in Server (Development Only)
 
@@ -103,7 +103,7 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param PATH_INFO $fastcgi_path_info;
         include fastcgi_params;
-        fastcgi_intercept_errors on;
+        fastcgi_intercept_errors off; # Preserve application-rendered errors.
     }
     
     # Static assets caching
