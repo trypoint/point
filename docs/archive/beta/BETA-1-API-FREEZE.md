@@ -1,8 +1,8 @@
 # Historical Beta.1 public API freeze proposal
 
-This is the Beta.1 proposal and is retained as historical evidence. It is not an approval record for v0.1.0. See the [Stable v0.1.0 API freeze approval record](STABLE-0.1.0-API-FREEZE.md).
+This is the Beta.1 proposal and is retained as historical evidence. It is not an approval record for v0.1.0. See the [Stable v0.1.0 API freeze approval record](../../architecture/STABLE-0.1.0-API-FREEZE.md).
 
-Baseline v0.1.0-alpha.7 at `978fac89d29cf6248ba8d2f8182709f3bb1dce89`. [Alpha.7 inventory](ALPHA-7-API-STABILITY-AUDIT.md) · [Machine-readable inventory](BETA-1-API-INVENTORY.json)
+Baseline v0.1.0-alpha.7 at `978fac89d29cf6248ba8d2f8182709f3bb1dce89`. [Alpha.7 inventory](../alpha/ALPHA-7-API-STABILITY-AUDIT.md) · [Machine-readable inventory](../../architecture/BETA-1-API-INVENTORY.json)
 
 The inventory reflects 71 Point types, including the two revision implementation types excluded from Alpha.7's 69-type appendix. Each method records the declaring type, signature, constructor status, parameter defaults, return type and documented exceptions. All 69 Alpha.7 types and 232 method entries match by type and member name. The broader reflection scan also includes inherited Point methods. Git detects one production file change, confined to the implementation of response emission. There are no proposed breaking changes or newly deprecated symbols.
 

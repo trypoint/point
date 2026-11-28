@@ -5,7 +5,7 @@
 The [changelog](CHANGELOG.md) contains the v0.1.0 release notes; release approval is still pending.
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.4%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Build Status](https://github.com/trypoint/point/actions/workflows/ci.yml/badge.svg)](https://github.com/trypoint/point/actions/workflows/ci.yml)
 
 ---
@@ -393,7 +393,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## License
 
-MIT License. See [LICENSE.md](LICENSE.md) for details.
+MIT License. See [LICENSE.md](LICENSE) for details.
 
 Copyright (c) 2011-2024 Josh Lockhart (original Slim Framework)
 Copyright (c) 2024 Madalin Marius Stan (Point Framework)

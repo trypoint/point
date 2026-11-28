@@ -4,13 +4,13 @@ Thank you for your interest in contributing to Point Framework! This document ou
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
+Be respectful in issues, reviews, and discussions. Report security issues privately using the instructions in [SECURITY.md](SECURITY.md).
 
 ## Getting Started
 
 ### Prerequisites
 
-- PHP 8.4 or 8.5
+- PHP >= 8.4.27
 - Composer 2.x
 - Git
 
@@ -52,7 +52,7 @@ composer test:all
 2. **Create a branch** from `main`: `git checkout -b feature/your-feature-name`
 3. **Make changes** following the coding standards
 4. **Add tests** for new functionality
-5. **Run validation**: `composer test:all` (must pass)
+5. **Run validation**: `composer test`, `composer stan`, and `composer cs:check` (report any pre-existing baseline failure)
 6. **Commit** with clear messages
 7. **Push** and open a Pull Request
 
@@ -84,7 +84,7 @@ composer test
 composer test:all
 ```
 
-All checks must pass before a PR can be merged.
+New or changed code must pass relevant tests and static analysis. Any pre-existing style-baseline exception requires an explicit, version-scoped maintainer decision; never report a failing global check as passing.
 
 ## Testing
 
@@ -118,7 +118,7 @@ Releases are handled by maintainers:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License (see `LICENSE.md`).
+By contributing, you agree that your contributions will be licensed under the MIT License (see `LICENSE`).
 
 ---
 
