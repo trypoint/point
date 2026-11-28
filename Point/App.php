@@ -54,7 +54,7 @@ class App implements RequestHandlerInterface
      *
      * @var string
      */
-    public const VERSION = '0.1.0-alpha';
+    public const VERSION = '0.1.0';
 
     /**
      * The dependency injection container instance.
