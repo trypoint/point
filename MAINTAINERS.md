@@ -27,7 +27,7 @@ By ensuring that all merged PRs are assigned to a milestone, we can easily find 
 
 - Follow PSR-12 coding standard
 - Run `composer cs:fix` before committing
-- Run `composer test:all` to verify all checks pass
+- Run the relevant Composer checks (`composer test`, `composer stan`, `composer cs:check`). A release-specific, approved baseline exception must be documented as FAIL, not PASS.
 
 ### Testing
 
