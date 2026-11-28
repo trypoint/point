@@ -2,7 +2,7 @@
 
 **Point is a lightweight, modular PHP microframework built for flexibility and extensibility.**
 
-The [changelog](CHANGELOG.md) contains the v0.1.0 release notes; release approval is still pending.
+Point Framework v0.1.0 Stable is published. See the [changelog](CHANGELOG.md) and [GitHub Release](https://github.com/trypoint/point/releases/tag/v0.1.0) for release details.
 
 [![PHP Version](https://img.shields.io/badge/PHP-8.4%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -317,7 +317,7 @@ Use the provider's own request factory for outbound client requests. Point's bui
 
 ## API Compatibility
 
-The v0.1.0 Stable API freeze is prepared for maintainer approval. Until it is approved, documented APIs and provisional behavior remain supported. No provisional API is removed or narrowed by this release candidate.
+The v0.1.0 Stable API freeze was approved on 2026-11-28. Documented stable APIs are covered by the approved compatibility policy; explicitly provisional APIs retain their documented behavior for v0.1.0 without a stable compatibility promise. See the [API freeze record](docs/architecture/STABLE-0.1.0-API-FREEZE.md).
 
 ---
 
