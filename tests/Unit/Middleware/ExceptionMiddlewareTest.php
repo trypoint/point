@@ -16,6 +16,8 @@ use Point\Middleware\ExceptionLoggingMiddleware;
 use Point\Middleware\HtmlExceptionMiddleware;
 use Point\Middleware\JsonExceptionMiddleware;
 use Point\Middleware\PlainTextExceptionMiddleware;
+use Point\Middleware\XmlBodyParserMiddleware;
+use Point\Middleware\XmlExceptionMiddleware;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -222,7 +224,7 @@ final class ExceptionMiddlewareTest extends TestCase
     public function testXmlExceptionMiddlewareRendersXml() : void
     {
         $app = AppFactory::create();
-        $middleware = $app->getContainer()->get(\Point\Middleware\XmlExceptionMiddleware::class)->withErrorDetails(true);
+        $middleware = $app->getContainer()->get(XmlExceptionMiddleware::class)->withErrorDetails(true);
         $request = $this->createRequest('GET', '/', ['Accept' => 'application/xml']);
 
         $handler = new class () implements RequestHandlerInterface {
@@ -237,6 +239,67 @@ final class ExceptionMiddlewareTest extends TestCase
         self::assertEquals(500, $response->getStatusCode());
         self::assertStringContainsString('application/xml', $response->getHeaderLine('Content-Type'));
         self::assertStringContainsString('Test error', (string)$response->getBody());
+    }
+
+    public function testXmlExceptionMiddlewareEscapesErrorTitles() : void
+    {
+        $middleware = AppFactory::create()->getContainer()->get(XmlExceptionMiddleware::class)->withErrorDetails(true);
+        $request = $this->createRequest('GET', '/', ['Accept' => 'application/xml']);
+        $handler = new class () implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request) : ResponseInterface
+            {
+                throw new RuntimeException('A & B <title> Ω café');
+            }
+        };
+
+        $response = $middleware->process($request, $handler);
+        $xml = simplexml_load_string((string)$response->getBody());
+
+        self::assertSame(500, $response->getStatusCode());
+        self::assertNotFalse($xml);
+        self::assertSame('A & B <title> Ω café', (string)$xml->exception->message);
+    }
+
+    public function testXmlBodyParserRestoresLibxmlErrorModeAfterSuccessAndFailure() : void
+    {
+        $parser = new XmlBodyParserMiddleware();
+        $factory = new \Nyholm\Psr7\Factory\Psr17Factory();
+        $handler = new class () implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request) : ResponseInterface
+            {
+                return (new \Nyholm\Psr7\Factory\Psr17Factory())->createResponse();
+            }
+        };
+
+        $originalMode = libxml_use_internal_errors();
+
+        try {
+            foreach ([false, true] as $initialMode) {
+                libxml_use_internal_errors($initialMode);
+                $validRequest = $factory->createServerRequest('POST', '/')
+                    ->withHeader('Content-Type', 'application/xml')
+                    ->withBody($factory->createStream('<root/>'));
+
+                $parser->process($validRequest, $handler);
+                self::assertSame($initialMode, libxml_use_internal_errors());
+
+                $invalidRequest = $factory->createServerRequest('POST', '/')
+                    ->withHeader('Content-Type', 'application/xml')
+                    ->withBody($factory->createStream('<root>'));
+
+                try {
+                    $parser->process($invalidRequest, $handler);
+                    self::fail('Malformed XML should throw an HTTP 400 exception.');
+                } catch (\Point\Exception\HttpBadRequestException) {
+                    self::assertSame($initialMode, libxml_use_internal_errors());
+                }
+
+                $parser->process($validRequest, $handler);
+                self::assertSame($initialMode, libxml_use_internal_errors());
+            }
+        } finally {
+            libxml_use_internal_errors($originalMode);
+        }
     }
 
     private function createRequest(string $method, string $uri, array $headers = []) : ServerRequestInterface

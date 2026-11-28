@@ -38,10 +38,12 @@ final class XmlBodyParserMiddleware implements MiddlewareInterface
             }
 
             $backup = libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($body, 'SimpleXMLElement', $options);
-
-            libxml_clear_errors();
-            libxml_use_internal_errors($backup);
+            try {
+                $xml = simplexml_load_string($body, 'SimpleXMLElement', $options);
+            } finally {
+                libxml_clear_errors();
+                libxml_use_internal_errors($backup);
+            }
 
             if ($xml === false) {
                 throw new HttpBadRequestException($request, 'Invalid XML body');

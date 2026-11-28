@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Point\Middleware;
 
 use DOMDocument;
+use DOMElement;
 use ErrorException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,34 +48,35 @@ final class XmlExceptionMiddleware implements MiddlewareInterface
         $errorElement = $dom->createElement('error');
         $dom->appendChild($errorElement);
 
-        $messageElement = $dom->createElement('message', $this->getErrorTitle($exception));
-        $errorElement->appendChild($messageElement);
+        $this->appendText($dom, $errorElement, 'message', $this->getErrorTitle($exception));
 
         // If error details should be displayed
         if ($this->displayErrorDetails) {
             do {
                 $exceptionElement = $dom->createElement('exception');
 
-                $typeElement = $dom->createElement('type', $exception::class);
-                $exceptionElement->appendChild($typeElement);
+                $this->appendText($dom, $exceptionElement, 'type', $exception::class);
 
                 $code = $exception instanceof ErrorException ? $exception->getSeverity() : $exception->getCode();
-                $codeElement = $dom->createElement('code', (string)$code);
-                $exceptionElement->appendChild($codeElement);
+                $this->appendText($dom, $exceptionElement, 'code', (string)$code);
 
-                $messageElement = $dom->createElement('message', $exception->getMessage());
-                $exceptionElement->appendChild($messageElement);
+                $this->appendText($dom, $exceptionElement, 'message', $exception->getMessage());
 
-                $fileElement = $dom->createElement('file', $exception->getFile());
-                $exceptionElement->appendChild($fileElement);
+                $this->appendText($dom, $exceptionElement, 'file', $exception->getFile());
 
-                $lineElement = $dom->createElement('line', (string)$exception->getLine());
-                $exceptionElement->appendChild($lineElement);
+                $this->appendText($dom, $exceptionElement, 'line', (string)$exception->getLine());
 
                 $errorElement->appendChild($exceptionElement);
             } while ($exception = $exception->getPrevious());
         }
 
         return (string)$dom->saveXML();
+    }
+
+    private function appendText(DOMDocument $dom, DOMElement $parent, string $name, string $value) : void
+    {
+        $element = $dom->createElement($name);
+        $element->appendChild($dom->createTextNode($value));
+        $parent->appendChild($element);
     }
 }
