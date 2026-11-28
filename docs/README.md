@@ -1,6 +1,6 @@
 # Documentation
 
-Point is a small PHP microframework. Start with the [README](../README.md) for a Hello World application, then use the focused guides below.
+Start with the [Point README](../README.md) for a Hello World application, then use these practical guides.
 
 ## Guides
 
@@ -12,8 +12,10 @@ Point is a small PHP microframework. Start with the [README](../README.md) for a
 
 ## Maintenance
 
-- [Changelog](../CHANGELOG.md) · [Security policy](../SECURITY.md) · [Contributing](../CONTRIBUTING.md)
+- [Changelog](../CHANGELOG.md) · [Security](../SECURITY.md) · [Contributing](../CONTRIBUTING.md)
 - [v0.1.0 release notes](releases/v0.1.0.md)
-- [Release and API decisions](architecture/STABLE-0.1.0-RELEASE-READINESS.md)
+- [Approved v0.1.0 API contract](architecture/STABLE-0.1.0-API-FREEZE.md)
+- [v0.1.0 release readiness](architecture/STABLE-0.1.0-RELEASE-READINESS.md)
+- [Historical Alpha/Beta/RC decisions](archive/README.md)
 
-Historical Alpha/Beta/RC evidence remains in `architecture/`; older development reports are kept in `archive/`. These are maintainer records, not required reading for users. GitHub stores this documentation; `.gitattributes` controls what Composer exports.
+Historical records are preserved for maintainers, not part of the everyday developer guides. The `.gitattributes` file controls what Composer includes in distribution archives.

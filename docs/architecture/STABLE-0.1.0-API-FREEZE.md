@@ -1,43 +1,67 @@
 # Point v0.1.0 Stable API freeze — approval record
 
-**Status: PARTIAL MAINTAINER DECISION — 2026-11-28.** The three undecided types have a maintainer decision; the full API freeze is not yet approved.
+**Status: APPROVED — full v0.1.0 API freeze, 2026-11-28.** The maintainer explicitly approved worksheet items 1, 2, 3, 4, 5 and 7 on 2026-11-28; the earlier decision for item 6 remains in force. The freeze defines the supported compatibility surface without authorizing release publication.
 
 ## Candidate scope
 
 - Release branch: `release/v0.1.0-stable-candidate`
-- Reviewed runtime candidate: `0600aa6f07214904613fce9ab88255d22d881295`
-- Reviewed runtime tree: `32ac15dbe0d3e70433433eb0d5d6b730945a25e6`
+- Branch HEAD reviewed before this approval-record update: `c40d34652e707e12162431d89dd228c04acf9aaa`
+- Review-base Git tree: `f18bd42b594996d047581bfb60c4ca4ed7cccf96`
+- Runtime and CI-tested source: `01fd91e6c51cd63aa73d2e5a1383353a5ba37789`; tree `4511d694e566426b35ee2005a11513fc27ce37b9`
 - PHP minimum: `>=8.4.27`
-- Composer package: `trypoint/point`
+- Composer package: `trypoint/point`, version `0.1.0`
+- Reproducible tree-based ZIP SHA-256: `4F289FE5A94B710E732A8D74B9B349C05D5D3012EC58BB7A69B5988BC208FF37` (80 packaged files; `git archive --format=zip --mtime=2026-11-28T00:00:00Z`)
 
-The reviewed source change from RC.1 changes the value of `App::VERSION` to `0.1.0`, updates XML middleware implementation, and adds a private XML rendering helper. It does not change public method or interface signatures. Runtime dependencies are unchanged from RC.1. These facts do not substitute for approval of the API policy below.
+The changes from the CI-tested source commit to the review base are confined to API, readiness, and style-exception records, all excluded from Composer export. The review-base archive and the previously CI-tested archive each contain 80 files; independent per-file SHA-256 comparison found no added, removed, or content-different packaged files. This record update is also export-ignored. The reproducible archive uses the branch tree object and fixed entry timestamps, so excluded documentation commits do not change its bytes. The previously tested archive SHA-256 is `FAD94F419BC4642F5171A0E2522CED28A150D094A1E5B0872531D48FF62C8D98`; that hash identifies the earlier CI artifact only.
 
-## Proposed compatibility policy
+## Inventory and classification rule
 
-The machine-readable [API inventory](BETA-1-API-INVENTORY.json) records 71 Point types: 49 `PUBLIC STABLE CANDIDATE`, 10 `PUBLIC EXTENSION CONTRACT`, 9 `INTERNAL`, and 3 `UNDECIDED`. The inventory preserves the Beta.1 classifications and has been refreshed to identify this candidate and `App::VERSION`; a future release that changes the inventory must review the changed signatures and classifications explicitly.
+The machine-readable [API inventory](BETA-1-API-INVENTORY.json) records 71 Point types: 49 `PUBLIC STABLE CANDIDATE`, 10 `PUBLIC EXTENSION CONTRACT`, 9 `INTERNAL`, and 3 `UNDECIDED`.
 
-If approved, the v0.1.x compatibility policy will be:
+The type category groups each type by its proposed role. A method-level category is authoritative for that member and may narrow the type-level category. Therefore, a public type does not make every public helper or constructor stable by implication. Current exceptions are explicit:
 
-- Preserve documented public signatures, parameter names/defaults, return values, exceptions, and behavior for the stable candidate APIs.
-- Preserve the listed extension interface signatures and protocol semantics; additive changes must keep existing implementations working.
-- Keep provisional and `UNDECIDED` behavior available and compatible until a separate maintainer-approved change documents any deprecation or removal. Do not infer permission to break them from their provisional classification.
-- Keep internal implementation details out of the compatibility promise, while preserving supported behavior and PSR interoperability.
-- Require a separate review record for any compatibility exception. Do not treat a release note, issue, or implementation change as approval by itself.
+- `Router`, `Route`, and `RouteGroup` remain public stable-candidate types for their stable-candidate methods. Their constructors are `UNDECIDED`; direct construction remains callable with current behavior in v0.1.0 but is not a stable constructor contract.
+- `RouterInterface::getRouteCollector()` and `Router::getRouteCollector()` are classified as `PUBLIC EXTENSION CONTRACT`. Keep the method, return type, and existing behavior compatible. Direct mutation of the returned FastRoute collector and reliance on FastRoute internals remain provisional.
+- `RouteGroup::__invoke()` is `INTERNAL`; it is a public PHP method used to run group callbacks, not a supported direct-call contract. Preserve its framework behavior.
+- `ExceptionMiddlewareTrait::parseAcceptHeader()` and the inherited middleware methods remain `UNDECIDED`; preserve their current signatures and behavior in v0.1.0 without promising a stable helper API.
 
-## Decisions requiring maintainer sign-off
+## Approved v0.1.x compatibility policy — 2026-11-28
 
-1. Approve or amend the proposed v0.1.x compatibility policy above.
-2. Confirm the inventory's 49 stable-candidate and 10 extension-contract classifications.
-3. **DECIDED (2026-11-28):** `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` remain `UNDECIDED` in the inventory. Preserve their current signatures and behavior compatibly for v0.1.0, without promising a stable public contract. Any later breaking change requires separate maintainer review and explicit notice.
-4. Decide whether direct construction of `Router`, `Route`, and `RouteGroup`, and the raw collector integration, are supported public contracts. Until that decision, preserve their current behavior.
-5. Confirm that the documented PSR-7, PSR-11, PSR-15, and PSR-17 interoperability boundary and the current runtime dependency set are acceptable for v0.1.0.
+1. Preserve documented public signatures and behavior for methods classified `PUBLIC STABLE CANDIDATE`, including parameter names and defaults (and thus named-argument calls), return types and values, and documented exceptions.
+2. Preserve all ten `PUBLIC EXTENSION CONTRACT` signatures and protocol semantics. Additions must keep existing extension implementations working.
+3. Preserve current behavior and signatures for every `UNDECIDED` member during v0.1.0. Its provisional classification does not authorize a breaking change; any later deprecation, removal, or behavior change requires separate maintainer review and explicit notice. No stable contract is promised for these members by this release.
+4. Treat `INTERNAL` types and members as implementation details outside the public compatibility promise. Keep existing supported behavior and PSR interoperability intact.
+5. Preserve the current PSR-7, PSR-11, PSR-15, and PSR-17 interoperability boundary and runtime dependency constraints recorded in `composer.json`. Do not introduce a breaking change or runtime dependency change under this freeze.
+6. Record any compatibility exception separately with the affected symbol, rationale, migration path, approver, and date. A release note, issue, inventory entry, or code change alone is not approval.
 
-## Approval record
+## Decisions already made
+
+**Three provisional types — DECIDED 2026-11-28.** `Point\\Container\\Definition\\HttpDefinitions`, `Point\\Container\\Definition\\PointDefinitions`, and `Point\\Routing\\PipelineRunner` remain `UNDECIDED`. Preserve their current signatures and behavior for v0.1.0 without promising a stable public API contract. This decision is retained as part of the full API freeze approved on 2026-11-28.
+
+**PHP-CS-Fixer baseline exception — ACCEPTED for v0.1.0 only, 2026-11-28.** The global check remains FAIL; the acceptance does not turn it into PASS. Details are recorded in [the style exception](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md).
+
+## Full API freeze approval — maintainer decision 2026-11-28
+
+The maintainer explicitly approved all remaining dispositions in [the API disposition worksheet](STABLE-0.1.0-API-DISPOSITION-PROPOSAL.md), including:
+
+1. **APPROVED (worksheet #1):** 49 public stable-candidate types, 10 public extension contracts and 9 internal types, with inventoried member-level categories taking precedence over containing type categories.
+2. **APPROVED (#2):** v0.1.x compatibility policy for documented stable signatures and behavior, named arguments and defaults, return types/values, documented exceptions, and compatible extension additions.
+3. **APPROVED (#3):** `Router::__construct()`, `Route::__construct()` and `RouteGroup::__construct()` remain callable and behavior-compatible in v0.1.0 but their direct-construction contracts are provisional.
+4. **APPROVED (#4):** `RouterInterface::getRouteCollector()` and `Router::getRouteCollector()` remain public extension contracts with existing return type and behavior; raw FastRoute collector mutation/internal integration remains provisional.
+5. **APPROVED (#5):** `RouteGroup::__invoke()` is internal; the public `parseAcceptHeader()` helper remains available but provisional, with current behavior preserved for v0.1.0.
+6. **PREVIOUSLY APPROVED (#6):** `HttpDefinitions`, `PointDefinitions` and `PipelineRunner` remain `UNDECIDED`/provisional, compatible for v0.1.0 without a stable public API promise.
+7. **APPROVED (#7):** Existing PSR-7/11/15/17 interoperability, Composer runtime dependencies, and PHP `>=8.4.27` remain the accepted boundary. Host/proxy/TLS/body-limit and deployment security remain application/server responsibilities.
+
+## Full API freeze approval record
 
 | Field | Maintainer entry |
 | --- | --- |
-| Decision | PARTIAL: provisional compatibility policy for the three undecided types approved; remaining freeze decisions pending |
-| Approved policy revision | Partial decision only; no blanket approval for the 49 stable candidates, 10 extension contracts or direct-construction/collector boundaries |
-| Approver | Project maintainer (explicit decision recorded in conversation) |
+| Decision | **APPROVED — complete Point v0.1.0 API Freeze** |
+| Approved policy revision | The seven dispositions above and the v0.1.x compatibility policy in this record, as proposed in the worksheet on the `1af31cf7c576a7efb9c62354539da18d22de56ea` branch HEAD |
+| Approver | Project maintainer (explicit approval in conversation) |
 | Date | 2026-11-28 |
-| Exceptions or follow-up issue | Complete sign-off for decisions 1, 2, 4 and 5 above; the three types remain provisionally compatible, not stable |
+| Exceptions or follow-up issue | Provisional constructors/helpers/types and raw FastRoute interaction retain existing v0.1.0 behavior without stable-contract promises; no new breaking changes are authorized |
+
+**Approval statement:** The maintainer approved the full v0.1.0 API Freeze, including worksheet items 1, 2, 3, 4, 5, and 7, while preserving the previously approved item 6. This is approval of the API contract only, not production deployment or publication.
+
+No Stable tag, merge, GitHub Release, or Packagist publication is authorized by this API record.

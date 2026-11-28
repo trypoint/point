@@ -90,7 +90,7 @@ PSR-11 coverage includes explicit null definitions, factory failures and externa
 - **Root cause.** `App::buildEffectiveMiddleware()` treats every instance of the concrete `Router` as the built-in routing endpoint. Alpha.6 also checks the identity of the application router or configured concrete-router service.
 - **Impact.** An explicitly configured PSR-15 endpoint and its middleware can be skipped when automatic defaults are enabled.
 - **Minimal correction.** Retain identity-sensitive recognition of Point's routing endpoint. Cover split bindings as well as the ordinary alias.
-- **Regression recommendation.** Bind a second Router as the request handler and assert its distinct response and that application middleware still wraps it. Keep the default-alias, explicitly configured routing and external-container cases. [App::buildEffectiveMiddleware](../../Point/App.php#L278) · [Default bootstrap integration tests](../../tests/Integration/DefaultBootstrapTest.php)
+- **Regression recommendation.** Bind a second Router as the request handler and assert its distinct response and that application middleware still wraps it. Keep the default-alias, explicitly configured routing and external-container cases. [App::buildEffectiveMiddleware](../../../Point/App.php#L278) · [Default bootstrap integration tests](../../../tests/Integration/DefaultBootstrapTest.php)
 
 ### P2 · The container guide promises autowiring that SimpleContainer does not implement
 
@@ -98,7 +98,7 @@ PSR-11 coverage includes explicit null definitions, factory failures and externa
 - **Root cause.** `SimpleContainer::set()` requires a definition and `get()` resolves registered entries. The README and container guide describe automatic construction.
 - **Impact.** Onboarding examples fail before the request can be handled.
 - **Minimal correction.** Document instances and factory closures for `SimpleContainer`. Keep autowiring examples in the PHP-DI section.
-- **Regression recommendation.** Run the replacement example with development dependencies absent and retain the existing missing-entry tests. [SimpleContainer](../../Point/Container/SimpleContainer.php#L56) · [Container guide](../container.md#L37)
+- **Regression recommendation.** Run the replacement example with development dependencies absent and retain the existing missing-entry tests. [SimpleContainer](../../../Point/Container/SimpleContainer.php#L56) · [Container guide](../../container.md#L37)
 
 ### P2 · Two HTTP test cases are excluded by PHPUnit discovery
 
@@ -106,7 +106,7 @@ PSR-11 coverage includes explicit null definitions, factory failures and externa
 - **Root cause.** Both secondary classes live in a file whose basename matches only `Psr7FactoryTest`.
 - **Impact.** The reported suite count excludes those two assertions about default bootstrap. The separate provider probes supply globals coverage for this audit.
 - **Minimal correction.** Move the two methods into the matching class or give each class its own PSR-4 filename.
-- **Regression recommendation.** Verify both names with `--list-tests` and execute the full suite on both supported patch runtimes. [HTTP factory tests](../../tests/Unit/Http/Psr7FactoryTest.php#L102)
+- **Regression recommendation.** Verify both names with `--list-tests` and execute the full suite on both supported patch runtimes. [HTTP factory tests](../../../tests/Unit/Http/Psr7FactoryTest.php#L102)
 
 ## 6. Developer experience
 

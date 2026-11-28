@@ -1,29 +1,45 @@
-# Point v0.1.0 Stable API disposition — maintainer review proposal
+# Point v0.1.0 Stable API disposition — maintainer approval worksheet
 
-**Status: DRAFT — NOT APPROVED.** Prepared on 2026-11-28. This is a proposed policy record, not full API Freeze approval, a runtime change, or release authorization.
+**Status: APPROVED BY MAINTAINER — 2026-11-28.** The maintainer explicitly approved items 1, 2, 3, 4, 5 and 7; item 6 was previously decided and remains in force. This worksheet records approved dispositions, not release or production authorization. The canonical record is [STABLE-0.1.0-API-FREEZE.md](STABLE-0.1.0-API-FREEZE.md).
 
-## Scope
+## Reviewed scope
 
-- Branch: `release/v0.1.0-stable-candidate`
-- CI-validated source: `01fd91e6c51cd63aa73d2e5a1383353a5ba37789`; tree `4511d694e566426b35ee2005a11513fc27ce37b9`.
-- Machine-readable inventory: `docs/architecture/BETA-1-API-INVENTORY.json` (71 types: 49 PUBLIC STABLE CANDIDATE, 10 PUBLIC EXTENSION CONTRACT, 9 INTERNAL, 3 UNDECIDED).
-- Policy/decision record: `docs/architecture/STABLE-0.1.0-API-FREEZE.md`.
+- Release branch review base before these approval-record updates: `c40d34652e707e12162431d89dd228c04acf9aaa`; tree `f18bd42b594996d047581bfb60c4ca4ed7cccf96`.
+- CI-tested package source: `01fd91e6c51cd63aa73d2e5a1383353a5ba37789`; tree `4511d694e566426b35ee2005a11513fc27ce37b9`.
+- Reproducible tree-based distribution: SHA-256 `4F289FE5A94B710E732A8D74B9B349C05D5D3012EC58BB7A69B5988BC208FF37`, 80 files (`git archive --format=zip --mtime=2026-11-28T00:00:00Z`). Its file contents match the prior CI-tested 80-file distribution byte for byte; release decision documents are export-ignored.
+- Inventory: 71 types — 49 `PUBLIC STABLE CANDIDATE`, 10 `PUBLIC EXTENSION CONTRACT`, 9 `INTERNAL`, 3 `UNDECIDED`.
 
-## Recommended dispositions requiring explicit maintainer approval
+The current runtime is unchanged from the CI-tested package. See the canonical API freeze for the reproducible artifact comparison and current package identity.
 
-1. **v0.1.x compatibility.** Maintain documented stable API signatures, parameter names/defaults, return types, documented exceptions and behavior, and the ten extension interface contracts. Any breaking exception requires separate documented maintainer approval.
-2. **Inventory classification.** Accept the existing 49 stable-candidate types and ten extension contracts, with an explicit method-level clarification for provisional constructors below. Keep the nine internal types classified as internal.
-3. **Already approved provisional types.** `Point\Container\Definition\HttpDefinitions`, `Point\Container\Definition\PointDefinitions`, `Point\Routing\PipelineRunner` remain UNDECIDED/provisional, compatible for v0.1.0 without a promised stable public contract (maintainer decision 2026-11-28).
-4. **Direct construction.** Application routing through documented `App`, `RouterInterface` and `RouteInterface` is part of the stable surface where inventoried. Direct `new Router(...)`, `new Route(...)`, and `new RouteGroup(...)` must keep current behavior working in v0.1.0, but their constructor signatures and low-level collaborators are **provisional** until the maintainer approves making them stable. Align the method-level inventory before full freeze sign-off; current inventoried constructor categories may imply stability.
-5. **FastRoute boundary.** Preserve `RouterInterface::getRouteCollector(): FastRoute\RouteCollector` as a public interface method with its observed contract. Direct collector mutations and integration with FastRoute internals remain provisional but compatible during v0.1.0. Do not silently break the method or its callers.
-6. **Interoperability.** Accept the present PSR-7/11/15/17 integration boundary, documented HTTP provider behavior and existing Composer runtime dependencies (`php >=8.4.27`). Application/server responsibilities include trusted Host/Forwarded headers, TLS termination, body-size ingress policy and production deployment configuration.
+## Approved dispositions
 
-## Required follow-through after explicit approval
+All numbered dispositions were approved or previously recorded by the maintainer on 2026-11-28. No runtime or dependency changes are authorized.
 
-- Reconcile any constructor/method-level provisional categories in `BETA-1-API-INVENTORY.json`, without modifying runtime source or public signatures.
-- Record approver, decision date and exact approved policy in `STABLE-0.1.0-API-FREEZE.md`.
-- Update release-readiness evidence and verify that document-only changes do not affect the Composer distribution.
-- Preserve the existing one-release PHP-CS-Fixer exception; full-tree style remains FAIL.
-- Keep publication BLOCKED until real production deployment acceptance or explicit maintainer deferral and separate final release authorization.
+| # | Proposed disposition | Maintainer decision |
+| --- | --- | --- |
+| 1 | **Stable surface.** Approve the 49 stable-candidate types and 10 extension contracts; retain the 9 internal types as internal. The method-level category is authoritative where it narrows its containing type's category. | APPROVED — 2026-11-28 |
+| 2 | **Compatibility policy.** In v0.1.x, preserve documented stable signatures and behavior, including parameter names/defaults for named arguments, return types/values, documented exceptions, and extension protocol semantics. Additions must remain compatible. | APPROVED — 2026-11-28 |
+| 3 | **Routing constructors.** Keep `Router::__construct()`, `Route::__construct()`, and `RouteGroup::__construct()` callable with their current signatures and behavior in v0.1.0, but treat direct construction and constructor contracts as provisional. The `App`, `RouterInterface`, and `RouteInterface` documented routing surfaces remain the supported usage path. | APPROVED — 2026-11-28 |
+| 4 | **Collector access.** Keep `RouterInterface::getRouteCollector(): FastRoute\\RouteCollector` and the `Router` implementation method public, with their existing signatures and behavior classified as `PUBLIC EXTENSION CONTRACT`. Treat direct mutation of the collector and reliance on FastRoute internals as advanced provisional integration; preserve present behavior in v0.1.0. | APPROVED — 2026-11-28 |
+| 5 | **Other member exceptions.** Keep `RouteGroup::__invoke()` internal to group callback execution. Keep the public `parseAcceptHeader()` helper available with current behavior for v0.1.0 but provisional (`UNDECIDED`), without a stable future contract. | APPROVED — 2026-11-28 |
+| 6 | **Already decided provisional types.** `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` remain `UNDECIDED`; preserve current signatures and behavior for v0.1.0 without a stable public contract. This was explicitly decided on 2026-11-28 and is not reopened by this worksheet. | RECORDED — not a new request |
+| 7 | **PSR/dependencies.** Preserve current PSR-7, PSR-11, PSR-15, and PSR-17 interoperability and the existing runtime dependency set in `composer.json` (`php >=8.4.27`). Server and application responsibilities include trusted Host/forwarded-header handling, TLS termination, request-size limits, and deployment configuration. | APPROVED — 2026-11-28 |
 
-No merge, Stable tag, GitHub Release or Packagist publication is authorized by this draft.
+### Classification detail
+
+- The class/type category communicates its candidate role. It does not promote every method automatically.
+- Method-level categories govern each inventoried member. In particular, the three constructors above are `UNDECIDED`; `RouteGroup::__invoke()` is `INTERNAL`; `parseAcceptHeader()` is `UNDECIDED`; `getRouteCollector()` is a public extension contract.
+- `UNDECIDED` means preserve current signatures and behavior for v0.1.0 while withholding a stable compatibility promise. It does not permit an unannounced break in this release.
+- The remaining inventory must continue to match these dispositions before approval. No runtime signature or dependency change is part of this proposal.
+
+## Approval record
+
+- Decision: **APPROVED — full Point v0.1.0 API Freeze**.
+- Approved policy revision: all dispositions #1, #2, #3, #4, #5 and #7 above, with previously recorded #6, including member-level classification precedence.
+- Approver: Project maintainer (explicit approval in conversation).
+- Date: 2026-11-28.
+- Exceptions / migration notes / follow-up issue: Provisional types, direct routing constructors, `parseAcceptHeader()`, and raw FastRoute collector integration remain behavior-compatible for v0.1.0 without stable API promises; `RouteGroup::__invoke()` remains internal. No breaking changes were approved.
+
+**Approval statement:** The maintainer approved the v0.1.x compatibility policy and all seven API dispositions (item #6 by prior decision). This approval is limited to the API Freeze and does not authorize deployment, merge, tag, GitHub Release, or Packagist publication.
+
+No Stable tag, merge, GitHub Release, or Packagist publication is authorized by this worksheet.

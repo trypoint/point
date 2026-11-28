@@ -30,4 +30,4 @@ On both runtimes the rebuilt RC.1 website consumer passed ten HTTP requests acro
 
 The bundled HttpSoft request creator can derive URI host and scheme from forwarding fields. This is provider behavior supplied to Point through PSR-7. Keep backends reachable only through trusted infrastructure, validate Host and clear or replace forwarding fields from clients. The fixture uses a trusted local edge. Multipart evidence covers POST. The auto detector uses SCRIPT_NAME and keeps the first valid mount for each application instance. Use an explicit path if the public prefix differs from that script directory.
 
-See [RC.1 compatibility](RC-1-COMPATIBILITY.md) and [proposed stable acceptance criteria](STABLE-0.1.0-ACCEPTANCE.md). Linux PHP-FPM and the actual production proxy topology remain acceptance gaps for stable v0.1.0.
+See [RC.1 compatibility](RC-1-COMPATIBILITY.md) and [proposed stable acceptance criteria](../../architecture/STABLE-0.1.0-ACCEPTANCE.md). Linux PHP-FPM and the actual production proxy topology remain acceptance gaps for stable v0.1.0.
