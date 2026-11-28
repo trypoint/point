@@ -1,6 +1,6 @@
 # Point v0.1.0 Stable release readiness
 
-**Disposition: BLOCKED — final maintainer decisions and production acceptance remain open.** Do not publish until all mandatory approval gates below are closed. This record distinguishes the current release branch identity from the earlier exact package identity run through consumer CI.
+**Disposition: BLOCKED — API Freeze APPROVED; production acceptance and final publication authorization remain open.** Do not publish until the remaining mandatory gates are closed. This record distinguishes the current release branch identity from the earlier exact package identity run through consumer CI.
 
 ## Source and distribution identity
 
@@ -39,9 +39,7 @@ The global style result remains **FAIL**. The maintainer accepted the pre-existi
 
 ## API freeze status
 
-**PENDING MAINTAINER APPROVAL — full freeze not approved.** The maintainer decision recorded on 2026-11-28 keeps `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` `UNDECIDED`, preserving current signatures and behavior for v0.1.0 without promising a stable public API contract. This decision is not blanket approval of the remaining 49 stable-candidate types, 10 extension contracts, or method-level dispositions.
-
-The complete approval-ready proposal is in [STABLE-0.1.0-API-FREEZE.md](STABLE-0.1.0-API-FREEZE.md) and its worksheet. Remaining decisions cover type/method classification precedence, the three routing constructors, the `parseAcceptHeader()` helper, `RouteGroup::__invoke()`, public compatibility for `RouterInterface::getRouteCollector()`, raw FastRoute collector use, PSR interoperability, named arguments, returns, documented exceptions, and the v0.1.x compatibility policy.
+**APPROVED — complete API Freeze, 2026-11-28.** The maintainer explicitly approved worksheet items 1, 2, 3, 4, 5 and 7, retaining the already approved item 6. The freeze covers 49 stable-candidate types, 10 extension contracts, 9 internal types, provisional constructors and helpers, the public `getRouteCollector()` extension contract, provisional raw FastRoute interaction, PSR interoperability, named arguments, return values, documented exceptions and the v0.1.x compatibility policy. `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` remain `UNDECIDED`/provisional but compatible in v0.1.0. See [the approved API Freeze](STABLE-0.1.0-API-FREEZE.md) and [approval worksheet](STABLE-0.1.0-API-DISPOSITION-PROPOSAL.md). This approval does not constitute hosting acceptance or publication authorization.
 
 ## Production deployment acceptance
 
@@ -63,15 +61,17 @@ Do not use PHP's built-in server as a production target. Point has no built-in t
 
 ## Decisions already recorded
 
-- **Provisional API types:** approved preservation of current signatures and behavior in v0.1.0, without stable-contract promise.
+- **Full API Freeze: APPROVED, 2026-11-28.** All seven worksheet dispositions are approved, including the earlier provisional-type decision.
+- **Provisional API types:** current signatures and behavior preserved in v0.1.0, without stable-contract promises.
 - **Global PHP-CS-Fixer baseline exception:** accepted for v0.1.0 only. Global style remains FAIL.
 
-These two decisions do not approve the remaining API freeze, production deployment, or final publication.
+These decisions do not approve production deployment, merge, tag, GitHub Release, or Packagist publication.
 
 ## Remaining release gates
 
-1. **Full API freeze:** maintainer must approve, amend, or reject each pending disposition in the API approval record. No approval is inferred.
-2. **Production deployment:** complete and review the target-host checklist above, or make an explicit documented maintainer deferral.
-3. **Final release integrity and authorization:** after any package-visible change, rebuild and validate the distribution. Before publication, confirm the final branch identity and artifact identity, then obtain separate authorization for merge, tag, GitHub Release, and Packagist publication.
+1. **Production deployment:** complete and review the target-host checklist above, or make an explicit documented maintainer deferral. No deferral is approved.
+2. **Final release integrity and authorization:** after any package-visible change, rebuild and validate the distribution. Before publication, reconfirm the final branch and artifact identity, then obtain separate authorization for merge, tag, GitHub Release, and Packagist publication.
+
+**Closed gate:** Complete API Freeze — **APPROVED**, 2026-11-28. The existing CI and PHP-CS-Fixer evidence is unchanged by these export-ignored documentation updates.
 
 No merge to `main`, Stable tag, GitHub Release, or Packagist publication is authorized by this report.

@@ -1,6 +1,6 @@
 # Point v0.1.0 Stable API disposition — maintainer approval worksheet
 
-**Status: PENDING MAINTAINER APPROVAL.** This worksheet contains proposed dispositions, not an approved API freeze, runtime change, or release authorization. The canonical record is [STABLE-0.1.0-API-FREEZE.md](STABLE-0.1.0-API-FREEZE.md).
+**Status: APPROVED BY MAINTAINER — 2026-11-28.** The maintainer explicitly approved items 1, 2, 3, 4, 5 and 7; item 6 was previously decided and remains in force. This worksheet records approved dispositions, not release or production authorization. The canonical record is [STABLE-0.1.0-API-FREEZE.md](STABLE-0.1.0-API-FREEZE.md).
 
 ## Reviewed scope
 
@@ -11,19 +11,19 @@
 
 The current runtime is unchanged from the CI-tested package. See the canonical API freeze for the reproducible artifact comparison and current package identity.
 
-## Recommended dispositions
+## Approved dispositions
 
-Please mark each item **Approve**, **Amend**, or **Reject** and add any amendment to the decision record.
+All numbered dispositions were approved or previously recorded by the maintainer on 2026-11-28. No runtime or dependency changes are authorized.
 
 | # | Proposed disposition | Maintainer decision |
 | --- | --- | --- |
-| 1 | **Stable surface.** Approve the 49 stable-candidate types and 10 extension contracts; retain the 9 internal types as internal. The method-level category is authoritative where it narrows its containing type's category. | PENDING |
-| 2 | **Compatibility policy.** In v0.1.x, preserve documented stable signatures and behavior, including parameter names/defaults for named arguments, return types/values, documented exceptions, and extension protocol semantics. Additions must remain compatible. | PENDING |
-| 3 | **Routing constructors.** Keep `Router::__construct()`, `Route::__construct()`, and `RouteGroup::__construct()` callable with their current signatures and behavior in v0.1.0, but treat direct construction and constructor contracts as provisional. The `App`, `RouterInterface`, and `RouteInterface` documented routing surfaces remain the supported usage path. | PENDING |
-| 4 | **Collector access.** Keep `RouterInterface::getRouteCollector(): FastRoute\\RouteCollector` and the `Router` implementation method public, with their existing signatures and behavior classified as `PUBLIC EXTENSION CONTRACT`. Treat direct mutation of the collector and reliance on FastRoute internals as advanced provisional integration; preserve present behavior in v0.1.0. | PENDING |
-| 5 | **Other member exceptions.** Keep `RouteGroup::__invoke()` internal to group callback execution. Keep the public `parseAcceptHeader()` helper available with current behavior for v0.1.0 but provisional (`UNDECIDED`), without a stable future contract. | PENDING |
+| 1 | **Stable surface.** Approve the 49 stable-candidate types and 10 extension contracts; retain the 9 internal types as internal. The method-level category is authoritative where it narrows its containing type's category. | APPROVED — 2026-11-28 |
+| 2 | **Compatibility policy.** In v0.1.x, preserve documented stable signatures and behavior, including parameter names/defaults for named arguments, return types/values, documented exceptions, and extension protocol semantics. Additions must remain compatible. | APPROVED — 2026-11-28 |
+| 3 | **Routing constructors.** Keep `Router::__construct()`, `Route::__construct()`, and `RouteGroup::__construct()` callable with their current signatures and behavior in v0.1.0, but treat direct construction and constructor contracts as provisional. The `App`, `RouterInterface`, and `RouteInterface` documented routing surfaces remain the supported usage path. | APPROVED — 2026-11-28 |
+| 4 | **Collector access.** Keep `RouterInterface::getRouteCollector(): FastRoute\\RouteCollector` and the `Router` implementation method public, with their existing signatures and behavior classified as `PUBLIC EXTENSION CONTRACT`. Treat direct mutation of the collector and reliance on FastRoute internals as advanced provisional integration; preserve present behavior in v0.1.0. | APPROVED — 2026-11-28 |
+| 5 | **Other member exceptions.** Keep `RouteGroup::__invoke()` internal to group callback execution. Keep the public `parseAcceptHeader()` helper available with current behavior for v0.1.0 but provisional (`UNDECIDED`), without a stable future contract. | APPROVED — 2026-11-28 |
 | 6 | **Already decided provisional types.** `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` remain `UNDECIDED`; preserve current signatures and behavior for v0.1.0 without a stable public contract. This was explicitly decided on 2026-11-28 and is not reopened by this worksheet. | RECORDED — not a new request |
-| 7 | **PSR/dependencies.** Preserve current PSR-7, PSR-11, PSR-15, and PSR-17 interoperability and the existing runtime dependency set in `composer.json` (`php >=8.4.27`). Server and application responsibilities include trusted Host/forwarded-header handling, TLS termination, request-size limits, and deployment configuration. | PENDING |
+| 7 | **PSR/dependencies.** Preserve current PSR-7, PSR-11, PSR-15, and PSR-17 interoperability and the existing runtime dependency set in `composer.json` (`php >=8.4.27`). Server and application responsibilities include trusted Host/forwarded-header handling, TLS termination, request-size limits, and deployment configuration. | APPROVED — 2026-11-28 |
 
 ### Classification detail
 
@@ -34,14 +34,12 @@ Please mark each item **Approve**, **Amend**, or **Reject** and add any amendmen
 
 ## Approval record
 
-- Decision: PENDING — approve / amend / reject each numbered disposition.
-- Approved policy revision: PENDING.
-- Approver: PENDING.
-- Date: PENDING.
-- Exceptions / migration notes / follow-up issue: PENDING.
+- Decision: **APPROVED — full Point v0.1.0 API Freeze**.
+- Approved policy revision: all dispositions #1, #2, #3, #4, #5 and #7 above, with previously recorded #6, including member-level classification precedence.
+- Approver: Project maintainer (explicit approval in conversation).
+- Date: 2026-11-28.
+- Exceptions / migration notes / follow-up issue: Provisional types, direct routing constructors, `parseAcceptHeader()`, and raw FastRoute collector integration remain behavior-compatible for v0.1.0 without stable API promises; `RouteGroup::__invoke()` remains internal. No breaking changes were approved.
 
-Approval statement: “I approve the v0.1.x compatibility policy and API dispositions above, subject to the exceptions recorded here.”
-
-Approver: ____________________  Date: ____________________
+**Approval statement:** The maintainer approved the v0.1.x compatibility policy and all seven API dispositions (item #6 by prior decision). This approval is limited to the API Freeze and does not authorize deployment, merge, tag, GitHub Release, or Packagist publication.
 
 No Stable tag, merge, GitHub Release, or Packagist publication is authorized by this worksheet.
