@@ -1,6 +1,6 @@
 # Migrating from Slim to Point
 
-Point requires PHP 8.4.27 or later. Install it with `composer require trypoint/point`. The bundled HttpSoft implementation is enough to run an application. `AppFactory::create()` enables default routing and error handling immediately. Slim 4 apps commonly register those middleware explicitly. The Slim 5 development branch also uses explicit registration and its current default container factory expects an external DI implementation. Follow Point's examples below when moving an application from either line.
+Point requires PHP 8.4.27 or later. Install it with `composer require trypoint/point`. The bundled HttpSoft implementation is enough to run an application. `AppFactory::create()` enables default routing and error handling immediately. Slim 4 applications commonly register those middleware explicitly. Compare the middleware order and bootstrap behavior in this guide with the application being migrated; do not assume that framework defaults or extension contracts are interchangeable.
 
 ## Routes, groups, and URLs
 

@@ -4,7 +4,7 @@
 
 | Version | Supported          |
 |---------|--------------------|
-| 0.1.x   | :white_check_mark: |
+| 0.1.x   | Supported beginning with the v0.1.0 stable publication |
 
 ### Application and deployment boundaries
 
@@ -13,6 +13,7 @@
 - Read route parameters from the route match or handler arguments. Keep authenticated identity in a distinct application-owned attribute or context. RoutingArgumentsMiddleware can overwrite an existing request attribute with the same name.
 - Treat ContainerResolver identifiers as trusted application configuration. Map any client-facing selection to an explicit allowlist of configured handlers.
 - Validate JSON shape in the endpoint contract. The JSON parser attaches arrays and decoded objects as parsed body data. Valid top-level scalars leave the existing parsed body unchanged.
+- Apply a request-body size limit at the trusted ingress before enabling XML parsing. The XML parser uses `LIBXML_NONET` and adds `LIBXML_NO_XXE` when the runtime provides it. These parser safeguards do not replace application-level input limits.
 
 ### Reporting a Vulnerability
 

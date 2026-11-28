@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **PHP** >= 8.4.27 (8.5 supported)
+- **PHP** >= 8.4.27. The release validation matrix covers PHP 8.4.27, PHP 8.4, and PHP 8.5.
 - **Composer** 2.x
 - Optional XML middleware requires SimpleXML for request parsing or DOM for error rendering.
 
@@ -78,7 +78,7 @@ php test.php
 
 Expected output:
 ```
-Point Framework 0.1.0-alpha installed successfully!
+Point Framework 0.1.0 installed successfully!
 ```
 
 ## Project Structure

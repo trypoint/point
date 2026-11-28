@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "baseline": "978fac89d29cf6248ba8d2f8182709f3bb1dce89",
+  "baseline": "0600aa6f07214904613fce9ab88255d22d881295",
   "classification": "proposed",
   "types": {
     "Point\\App": {
@@ -427,7 +427,7 @@
         }
       },
       "constants": {
-        "VERSION": "0.1.0-alpha"
+        "VERSION": "0.1.0"
       }
     },
     "Point\\Container\\ContainerResolver": {

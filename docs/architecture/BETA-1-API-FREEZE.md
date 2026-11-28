@@ -1,4 +1,6 @@
-# Beta.1 public API freeze
+# Historical Beta.1 public API freeze proposal
+
+This is the Beta.1 proposal and is retained as historical evidence. It is not an approval record for v0.1.0. See the [Stable v0.1.0 API freeze approval record](STABLE-0.1.0-API-FREEZE.md).
 
 Baseline v0.1.0-alpha.7 at `978fac89d29cf6248ba8d2f8182709f3bb1dce89`. [Alpha.7 inventory](ALPHA-7-API-STABILITY-AUDIT.md) · [Machine-readable inventory](BETA-1-API-INVENTORY.json)
 

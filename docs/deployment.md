@@ -4,6 +4,8 @@
 
 Point requires PHP 8.4.27 or later. Use a server and PHP SAPI configured to route application requests to the front controller.
 
+The configuration examples below are starting points, not a certified production support matrix. CI verifies HTTP fixtures on Ubuntu and Windows and an Ubuntu Nginx/PHP-FPM fixture. A production host, TLS termination, proxy trust configuration, filesystem permissions, resource limits and operational monitoring have not been validated as a deployment product. Review and test each configuration in the target environment before launch.
+
 When deploying behind a reverse proxy, configure the trusted edge to validate the host and strip or overwrite forwarding headers from clients. Point has no built-in trusted-proxy configuration. The selected PSR-7 globals creator can use forwarding fields when building the URI. The bundled HttpSoft creator can use X-Forwarded-Host and X-Forwarded-Proto. Restrict backend access to the trusted edge if you rely on its filtering. If the application uses forwarded scheme, host, client address or path information, interpret it only after validating the proxy connection. Point detects the base path from SCRIPT_NAME when using automatic routing. Configure it explicitly if the public URL prefix differs from the front controller directory seen by PHP, for example when a proxy strips the prefix.
 
 ## PHP Built-in Server (Development Only)
@@ -245,7 +247,6 @@ opcache.max_accelerated_files=20000
 opcache.revalidate_freq=0
 opcache.validate_timestamps=0
 opcache.save_comments=1
-opcache.fast_shutdown=1
 ```
 
 **Note**: Set `opcache.validate_timestamps=0` and `opcache.revalidate_freq=0` for production. Clear OPcache on deploy.
@@ -253,19 +254,12 @@ opcache.fast_shutdown=1
 ## Health Check Endpoint
 
 ```php
-$app->get('/health', function ($request, $response) {
-    // Check database, cache, external services
-    $checks = [
-        'database' => $this->checkDatabase(),
-        'cache' => $this->checkCache(),
-    ];
-    
-    $status = array_reduce($checks, fn($c, $v) => $c && $v, true) ? 200 : 503;
-    
+$app->get('/health', static function ($request, $response) {
+    $payload = json_encode(['status' => 'healthy'], JSON_THROW_ON_ERROR);
+    $response->getBody()->write($payload);
+
     return $response
-        ->withStatus($status)
-        ->withHeader('Content-Type', 'application/json')
-        ->withJson(['status' => $status === 200 ? 'healthy' : 'unhealthy', 'checks' => $checks]);
+        ->withHeader('Content-Type', 'application/json');
 });
 ```
 

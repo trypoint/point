@@ -2,6 +2,8 @@
 
 **Point is a lightweight, modular PHP microframework built for flexibility and extensibility.**
 
+The [changelog](CHANGELOG.md) contains the v0.1.0 release notes; release approval is still pending.
+
 [![PHP Version](https://img.shields.io/badge/PHP-8.4%20%7C%208.5-8892BF?logo=php&logoColor=white)](https://php.net/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 [![Build Status](https://github.com/trypoint/point/actions/workflows/ci.yml/badge.svg)](https://github.com/trypoint/point/actions/workflows/ci.yml)
@@ -27,6 +29,8 @@
 - **PHP** >= 8.4.27
 - **Composer** 2.x
 - **Optional XML middleware** requires SimpleXML for request parsing or DOM for error rendering.
+
+The release CI matrix covers PHP 8.4.27, PHP 8.4, and PHP 8.5 on Ubuntu and Windows. The Ubuntu Nginx/PHP-FPM job validates a CI fixture; it does not certify a production host or deployment topology.
 
 ---
 
@@ -311,6 +315,10 @@ $app = AppFactory::create([
 
 Use the provider's own request factory for outbound client requests. Point's built-in definitions bind the five server-side factory interfaces listed above.
 
+## API Compatibility
+
+The v0.1.0 Stable API freeze is prepared for maintainer approval. Until it is approved, documented APIs and provisional behavior remain supported. No provisional API is removed or narrowed by this release candidate.
+
 ---
 
 ## Testing
@@ -319,11 +327,12 @@ Use the provider's own request factory for outbound client requests. Point's bui
 # Run all tests
 composer test
 
-# Run with code style check
-composer test:all
+# Run static analysis and the configured style check
+composer stan
+composer cs:check
 ```
 
-Requires development dependencies:
+The full-tree style command still reports the documented RC.1 baseline exception. Requires development dependencies:
 ```bash
 composer install
 ```
