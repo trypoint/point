@@ -1,6 +1,6 @@
 # Point v0.1.0 Stable API freeze — approval record
 
-**Status: prepared for maintainer decision; not approved.** No maintainer approval is recorded by this document.
+**Status: PARTIAL MAINTAINER DECISION — 2026-11-28.** The three undecided types have a maintainer decision; the full API freeze is not yet approved.
 
 ## Candidate scope
 
@@ -28,7 +28,7 @@ If approved, the v0.1.x compatibility policy will be:
 
 1. Approve or amend the proposed v0.1.x compatibility policy above.
 2. Confirm the inventory's 49 stable-candidate and 10 extension-contract classifications.
-3. Decide whether `Point\Container\Definition\HttpDefinitions`, `Point\Container\Definition\PointDefinitions`, and `Point\Routing\PipelineRunner` remain `UNDECIDED`, become supported extension contracts, or are classified internal.
+3. **DECIDED (2026-11-28):** `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` remain `UNDECIDED` in the inventory. Preserve their current signatures and behavior compatibly for v0.1.0, without promising a stable public contract. Any later breaking change requires separate maintainer review and explicit notice.
 4. Decide whether direct construction of `Router`, `Route`, and `RouteGroup`, and the raw collector integration, are supported public contracts. Until that decision, preserve their current behavior.
 5. Confirm that the documented PSR-7, PSR-11, PSR-15, and PSR-17 interoperability boundary and the current runtime dependency set are acceptable for v0.1.0.
 
@@ -36,8 +36,8 @@ If approved, the v0.1.x compatibility policy will be:
 
 | Field | Maintainer entry |
 | --- | --- |
-| Decision | Pending |
-| Approved policy revision | Pending |
-| Approver | Pending |
-| Date | Pending |
-| Exceptions or follow-up issue | Pending |
+| Decision | PARTIAL: provisional compatibility policy for the three undecided types approved; remaining freeze decisions pending |
+| Approved policy revision | Partial decision only; no blanket approval for the 49 stable candidates, 10 extension contracts or direct-construction/collector boundaries |
+| Approver | Project maintainer (explicit decision recorded in conversation) |
+| Date | 2026-11-28 |
+| Exceptions or follow-up issue | Complete sign-off for decisions 1, 2, 4 and 5 above; the three types remain provisionally compatible, not stable |

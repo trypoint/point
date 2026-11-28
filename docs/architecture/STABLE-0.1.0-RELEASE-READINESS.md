@@ -1,38 +1,55 @@
 # Point v0.1.0 Stable release readiness
 
-**Disposition: blocked pending the release gates below.** This report records evidence; it does not approve a release.
+**Disposition: BLOCKED — publication not authorized.** The exact finalization candidate passed the independent six-job CI matrix. The maintainer has accepted a v0.1.0-only baseline style exception and decided to preserve three undecided API types as compatible but provisional. The full API freeze and actual production deployment gate are not yet closed.
 
 ## Source and distribution evidence
 
-The last fully validated framework candidate is commit `0600aa6f07214904613fce9ab88255d22d881295`, tree `32ac15dbe0d3e70433433eb0d5d6b730945a25e6`. Its newly built Composer ZIP had SHA-256 `06fa590b5db07453bc67f041cd1f7036eea9841246193b97b7863f17dd3b91e5`, contains 80 files, and matches the earlier validated archive across all 80 files after line-ending normalization. The exact artifact passed consumer validation and GitHub Actions run [46146926886](https://github.com/trypoint/point-consumer/actions/runs/46146926886), six of six jobs.
+- Framework branch: `release/v0.1.0-stable-candidate`
+- CI-validated source commit: `01fd91e6c51cd63aa73d2e5a1383353a5ba37789`
+- Git tree: `4511d694e566426b35ee2005a11513fc27ce37b9`
+- Parent: `0600aa6f07214904613fce9ab88255d22d881295`
+- Commit-built distribution ZIP SHA-256: `FAD94F419BC4642F5171A0E2522CED28A150D094A1E5B0872531D48FF62C8D98`
+- Composer identity: `trypoint/point`, version `0.1.0`, PHP `>=8.4.27`
+- Distribution: 80 files; installed consumer inventory verified byte for byte
+- Independent consumer commit: `9e9cb87f8aaafdc71e5ceaea05b8009fdf105fa7`
+- GitHub Actions: [run 46150260829](https://github.com/trypoint/point-consumer/actions/runs/46150260829), **six of six jobs PASS** (Ubuntu PHP 8.4.27/8.4/8.5; Windows PHP 8.4/8.5; Ubuntu Nginx/PHP-FPM).
 
-The current finalization edits change package-visible documentation and add excluded test/documentation files. Therefore the archive hash and source commit above identify the previously validated candidate only. They must be rebuilt and revalidated after these edits are selected. The new security tests have only local evidence until the final artifact is run through point-consumer.
+The package has the same 80-file inventory as the earlier selected archive; four package-visible documentation files (`CHANGELOG.md`, `README.md`, `SECURITY.md`, `docs/migration-from-slim.md`) differ. Runtime XML fixes, signatures, and dependencies remain unchanged. The archive identity above refers to the tested candidate before this decision-record-only update. These three approval/readiness documents are excluded from Composer export under `.gitattributes`; final branch-head and distribution identity should be reconfirmed before publication.
 
-## Security gate matrix
+## Security and quality evidence
 
 | Gate | Evidence | Status |
 | --- | --- | --- |
-| XML exception title escaping and well-formed error response | Existing PHPUnit regression covers ampersand, markup, and Unicode; HTTP status is asserted. | PASS on the validated candidate |
-| XML parser restores libxml error mode on success/failure and can parse a later valid body | Existing PHPUnit regression covers both initial error modes and invalid-then-valid parsing. | PASS on the validated candidate |
-| External file entity | Dedicated PHPUnit case uses a disposable local sentinel file; parser did not expose its contents. | PASS locally on PHP 8.5.10 (32 MiB limit, 5 second execution limit) |
-| External network entity, loopback only | Dedicated PHPUnit case targets only an ephemeral closed `127.0.0.1` port; no external host is contacted. | PASS locally on PHP 8.5.10 (32 MiB limit, 5 second execution limit) |
-| Recursive entity | Dedicated PHPUnit case expects the parser to reject the request with HTTP 400. | PASS locally on PHP 8.5.10 (32 MiB limit, 5 second execution limit) |
-| Controlled entity amplification | Four-level, 2,560-character maximum controlled expansion payload; parser output is asserted at or below 4,096 characters. | PASS locally on PHP 8.5.10 (32 MiB limit, 5 second execution limit) |
-| Request-body size limits | Enforced at the trusted ingress by deployment configuration; middleware does not set an application limit. | APPLICATION/DEPLOYMENT RESPONSIBILITY |
-| Dependency audit | Locked dependency audit passed for the previously validated candidate. | PASS on the validated candidate |
+| XML error text, escaping, Unicode and HTTP status framing | PHPUnit regression and consumer tests | PASS |
+| libxml error mode restoration and malformed-then-valid parsing | PHPUnit regression and consumer tests | PASS |
+| External file entity | Isolated bounded PHPUnit test on PHP 8.5.10, 32 MiB/5 s | PASS locally |
+| External network entity (closed loopback only) | Isolated bounded PHPUnit test, no public network target | PASS locally |
+| Recursive entity handling | Isolated bounded PHPUnit test | PASS locally |
+| Controlled entity amplification | Isolated bounded PHPUnit test | PASS locally |
+| Local full PHPUnit suite | PHP 8.5.10, 283 tests / 690 assertions, warnings/deprecations fail | PASS |
+| Composer strict validation, strict autoload, PHPStan level 8, locked audit | Local finalization report | PASS |
+| Modified PHP files PHP-CS-Fixer | 0/5 violations | PASS |
+| Global PHP-CS-Fixer | 100/105 reported; clean RC.1 baseline 104/104 | **FAIL — accepted exception for v0.1.0 only** |
+| Exact packaged candidate installed in consumer | All 80 files byte-for-byte verified | PASS |
+| Independent consumer six-job matrix | GitHub Actions run 46150260829 | PASS |
 
-## Runtime, quality, and deployment evidence
+The four dedicated XML security cases were separately executed locally in a bounded isolated process. The six-job consumer workflow passed, but this record does not claim that those four *new PHPUnit cases* themselves ran on every CI axis without explicit evidence.
 
-- The previous exact candidate passed Composer strict validation, strict optimized autoload, PHPUnit, PHPStan, dependency audit, consumer package identity checks, and all six consumer workflow jobs.
-- PHP-CS-Fixer on the five changed PHP files passed. The full-tree check remains **FAIL** under PHP 8.5.10 and PHP-CS-Fixer 3.95.32: clean RC.1 reported 104/104 files; the candidate reports 100/105; all five changed PHP files have zero violations. See the [baseline exception](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md). The exception documents existing baseline debt and does not make the global gate pass.
-- Ubuntu Nginx/PHP-FPM passed as a CI fixture in the consumer matrix. Earlier release evidence records Windows Apache/Nginx fixtures. Production host configuration, production TLS termination, and the intended live reverse-proxy topology remain unverified.
-- No deployment environment beyond those named fixtures is claimed as supported by test evidence. Configure host validation, request limits, forwarding-header trust, TLS, file permissions, process limits, logging, monitoring, and backups for the actual deployment.
+The global fixer exception is recorded in [STYLE-BASELINE-EXCEPTION.md](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md). It was explicitly accepted by the maintainer for this release only; the actual global command remains FAIL. No formatter configuration change or unrelated mass reformat is authorized.
+
+## Maintainer decisions — 2026-11-28
+
+- **Provisional API types: DECIDED.** `Point\Container\Definition\HttpDefinitions`, `Point\Container\Definition\PointDefinitions`, and `Point\Routing\PipelineRunner` retain the inventory status `UNDECIDED`, remain compatible in v0.1.0 and do not receive a promised stable public API contract. The other API classification and direct-construction/collector decisions remain pending. See [Stable API Freeze](STABLE-0.1.0-API-FREEZE.md).
+- **Global PHP-CS-Fixer baseline exception: ACCEPTED for v0.1.0 only.** The global check remains **FAIL** and is disclosed; all five changed PHP files passed. See [STYLE-BASELINE-EXCEPTION.md](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md).
+
+## Deployment evidence
+
+The Ubuntu Nginx/PHP-FPM and HTTP ingress checks passed in isolated CI fixtures, not the intended real production configuration. Host validation, TLS termination, trusted proxy/header propagation, body limits, file permissions, process boundaries, logging, and operational readiness must be assessed at the target host or explicitly deferred by the maintainer.
 
 ## Final release blockers
 
-1. Run the new XML security cases and existing XML regression tests against the final artifact on the consumer matrix; local bounded tests alone do not satisfy cross-platform release evidence.
-2. Rebuild the archive from the final selected commit, record its file inventory and SHA-256, and verify installed package identity.
-3. Rerun the consumer workflow against the final archive and final Git tree reference.
-4. Obtain explicit maintainer sign-off on the API freeze and the three undecided inventory types.
-5. Obtain an explicit maintainer decision accepting the documented global style baseline exception or define an approved remediation. The style gate remains failed until its command exits zero.
-6. Validate the intended production deployment topology separately from CI fixtures, or record a maintainer decision to defer that environment-specific acceptance.
+1. **Complete API Freeze maintainer approval.** Items 1, 2, 4 and 5 in the API approval document still require explicit disposition. The provisional-type decision above is not blanket approval.
+2. **Real production deployment acceptance or explicit maintainer deferral.** CI fixtures do not establish live TLS, trusted proxy and hosting topology.
+3. **Final release integrity and publication approval.** Reconfirm final commit and distribution identity after documentation-only changes. No merge to `main`, Stable tag, GitHub Release or Packagist publication is authorized by this decision record.
+
+The global style failure is an **accepted, version-limited exception**, not a PASS and not a remaining request for style approval.
