@@ -1,55 +1,77 @@
 # Point v0.1.0 Stable release readiness
 
-**Disposition: BLOCKED — publication not authorized.** The exact finalization candidate passed the independent six-job CI matrix. The maintainer has accepted a v0.1.0-only baseline style exception and decided to preserve three undecided API types as compatible but provisional. The full API freeze and actual production deployment gate are not yet closed.
+**Disposition: BLOCKED — final maintainer decisions and production acceptance remain open.** Do not publish until all mandatory approval gates below are closed. This record distinguishes the current release branch identity from the earlier exact package identity run through consumer CI.
 
-## Source and distribution evidence
+## Source and distribution identity
 
-- Framework branch: `release/v0.1.0-stable-candidate`
-- CI-validated source commit: `01fd91e6c51cd63aa73d2e5a1383353a5ba37789`
-- Git tree: `4511d694e566426b35ee2005a11513fc27ce37b9`
-- Parent: `0600aa6f07214904613fce9ab88255d22d881295`
-- Commit-built distribution ZIP SHA-256: `FAD94F419BC4642F5171A0E2522CED28A150D094A1E5B0872531D48FF62C8D98`
-- Composer identity: `trypoint/point`, version `0.1.0`, PHP `>=8.4.27`
-- Distribution: 80 files; installed consumer inventory verified byte for byte
-- Independent consumer commit: `9e9cb87f8aaafdc71e5ceaea05b8009fdf105fa7`
-- GitHub Actions: [run 46150260829](https://github.com/trypoint/point-consumer/actions/runs/46150260829), **six of six jobs PASS** (Ubuntu PHP 8.4.27/8.4/8.5; Windows PHP 8.4/8.5; Ubuntu Nginx/PHP-FPM).
+| Item | Verified identity |
+| --- | --- |
+| Branch HEAD reviewed before this readiness-record update | `c40d34652e707e12162431d89dd228c04acf9aaa` |
+| Review-base Git tree | `f18bd42b594996d047581bfb60c4ca4ed7cccf96` |
+| Parent | `2e1ba56a4511e8ab641cf73315f394f4d93a570b` |
+| CI-tested framework commit | `01fd91e6c51cd63aa73d2e5a1383353a5ba37789` |
+| CI-tested framework tree | `4511d694e566426b35ee2005a11513fc27ce37b9` |
+| Reproducible tree-based ZIP SHA-256 | `4F289FE5A94B710E732A8D74B9B349C05D5D3012EC58BB7A69B5988BC208FF37` |
+| Current exported inventory | 80 files; `docs/migration-from-slim.md` is included; release, test, and development files follow `.gitattributes` export-ignore rules |
+| Package identity | Installed as `trypoint/point` `0.1.0`; PHP `>=8.4.27` |
+| Runtime dependency constraints | Unchanged from RC.1 |
 
-The package has the same 80-file inventory as the earlier selected archive; four package-visible documentation files (`CHANGELOG.md`, `README.md`, `SECURITY.md`, `docs/migration-from-slim.md`) differ. Runtime XML fixes, signatures, and dependencies remain unchanged. The archive identity above refers to the tested candidate before this decision-record-only update. These three approval/readiness documents are excluded from Composer export under `.gitattributes`; final branch-head and distribution identity should be reconfirmed before publication.
+The commits after the CI-tested source are documentation-only and excluded from Composer export. Reproducibly build the release archive with Git 2.56.1 by resolving the selected branch commit to its tree (`git rev-parse <release-branch-commit>^{tree}`), then running `git archive --format=zip --mtime=2026-11-28T00:00:00Z --output=point-v0.1.0.zip <tree-sha>`. Archiving the tree rather than the commit and fixing entry timestamps makes the ZIP hash independent of excluded documentation commits. The review-base archive and prior tested archive each contain 80 entries; per-file SHA-256 comparison found zero additions, zero removals, and zero content differences. The earlier consumer archive SHA-256, `FAD94F419BC4642F5171A0E2522CED28A150D094A1E5B0872531D48FF62C8D98`, identifies the artifact used in CI, not the current Git commit. Consumer CI installed `trypoint/point` `0.1.0` and byte-verified all 80 packaged files for the content-identical artifact. The current tree-based ZIP checksum itself has not been submitted to consumer CI.
 
-## Security and quality evidence
+## Quality and security gate matrix
 
 | Gate | Evidence | Status |
 | --- | --- | --- |
-| XML error text, escaping, Unicode and HTTP status framing | PHPUnit regression and consumer tests | PASS |
-| libxml error mode restoration and malformed-then-valid parsing | PHPUnit regression and consumer tests | PASS |
-| External file entity | Isolated bounded PHPUnit test on PHP 8.5.10, 32 MiB/5 s | PASS locally |
-| External network entity (closed loopback only) | Isolated bounded PHPUnit test, no public network target | PASS locally |
-| Recursive entity handling | Isolated bounded PHPUnit test | PASS locally |
-| Controlled entity amplification | Isolated bounded PHPUnit test | PASS locally |
-| Local full PHPUnit suite | PHP 8.5.10, 283 tests / 690 assertions, warnings/deprecations fail | PASS |
-| Composer strict validation, strict autoload, PHPStan level 8, locked audit | Local finalization report | PASS |
-| Modified PHP files PHP-CS-Fixer | 0/5 violations | PASS |
-| Global PHP-CS-Fixer | 100/105 reported; clean RC.1 baseline 104/104 | **FAIL — accepted exception for v0.1.0 only** |
-| Exact packaged candidate installed in consumer | All 80 files byte-for-byte verified | PASS |
-| Independent consumer six-job matrix | GitHub Actions run 46150260829 | PASS |
+| XML title escaping, markup, Unicode, error status, malformed-then-valid recovery, and libxml state restoration | Local PHPUnit and consumer integration checks | **PASS** |
+| External file entity, loopback-only external network entity, recursive entities, bounded amplification | Four isolated PHPUnit cases; PHP 8.5.10, 32 MiB memory limit, 5 s execution limit; no public network target | **PASS locally** |
+| Full PHPUnit suite with warning/deprecation failures | PHP 8.5.10; 283 tests, 690 assertions | **PASS** |
+| Composer strict validation and optimized strict autoload | PHP 8.5.10 / Composer 2.11.3 | **PASS** |
+| PHPStan level 8 | PHP 8.5.10 | **PASS** |
+| Locked dependency audit | PHP 8.5.10 | **PASS** |
+| PHP-CS-Fixer on five changed PHP files | PHP-CS-Fixer 3.95.32; 0/5 violations | **PASS** |
+| Full-tree PHP-CS-Fixer | 100/105 files reported; RC.1 baseline 104/104 | **FAIL — accepted v0.1.0-only exception** |
+| Six-job independent consumer matrix | [GitHub Actions run 46150260829](https://github.com/trypoint/point-consumer/actions/runs/46150260829); artifact FAD…C8D98, consumer commit `9e9cb87f8aaafdc71e5ceaea05b8009fdf105fa7` | **PASS** |
+| Exact current-HEAD archive checksum in consumer CI | New SHA 4F28…FF37 not dispatched; contents independently match CI archive 80/80 files | **NOT RUN for this archive identity; no package-content delta** |
 
-The four dedicated XML security cases were separately executed locally in a bounded isolated process. The six-job consumer workflow passed, but this record does not claim that those four *new PHPUnit cases* themselves ran on every CI axis without explicit evidence.
+The six passing jobs were Ubuntu PHP 8.4.27, Ubuntu PHP 8.4, Ubuntu PHP 8.5, Windows PHP 8.4, Windows PHP 8.5, and Ubuntu Nginx/PHP-FPM. The PHP 8.4.27 job confirmed the 80 installed files byte for byte. XML security cases were run locally in a bounded isolated process; the consumer matrix did not run those four PHPUnit cases on every platform.
 
-The global fixer exception is recorded in [STYLE-BASELINE-EXCEPTION.md](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md). It was explicitly accepted by the maintainer for this release only; the actual global command remains FAIL. No formatter configuration change or unrelated mass reformat is authorized.
+The global style result remains **FAIL**. The maintainer accepted the pre-existing baseline exception for v0.1.0 only; that acceptance is documented in [STYLE-BASELINE-EXCEPTION.md](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md). It does not suppress the command or turn FAIL into PASS.
 
-## Maintainer decisions — 2026-11-28
+## API freeze status
 
-- **Provisional API types: DECIDED.** `Point\Container\Definition\HttpDefinitions`, `Point\Container\Definition\PointDefinitions`, and `Point\Routing\PipelineRunner` retain the inventory status `UNDECIDED`, remain compatible in v0.1.0 and do not receive a promised stable public API contract. The other API classification and direct-construction/collector decisions remain pending. See [Stable API Freeze](STABLE-0.1.0-API-FREEZE.md).
-- **Global PHP-CS-Fixer baseline exception: ACCEPTED for v0.1.0 only.** The global check remains **FAIL** and is disclosed; all five changed PHP files passed. See [STYLE-BASELINE-EXCEPTION.md](../audit/release-validation/STYLE-BASELINE-EXCEPTION.md).
+**PENDING MAINTAINER APPROVAL — full freeze not approved.** The maintainer decision recorded on 2026-11-28 keeps `HttpDefinitions`, `PointDefinitions`, and `PipelineRunner` `UNDECIDED`, preserving current signatures and behavior for v0.1.0 without promising a stable public API contract. This decision is not blanket approval of the remaining 49 stable-candidate types, 10 extension contracts, or method-level dispositions.
 
-## Deployment evidence
+The complete approval-ready proposal is in [STABLE-0.1.0-API-FREEZE.md](STABLE-0.1.0-API-FREEZE.md) and its worksheet. Remaining decisions cover type/method classification precedence, the three routing constructors, the `parseAcceptHeader()` helper, `RouteGroup::__invoke()`, public compatibility for `RouterInterface::getRouteCollector()`, raw FastRoute collector use, PSR interoperability, named arguments, returns, documented exceptions, and the v0.1.x compatibility policy.
 
-The Ubuntu Nginx/PHP-FPM and HTTP ingress checks passed in isolated CI fixtures, not the intended real production configuration. Host validation, TLS termination, trusted proxy/header propagation, body limits, file permissions, process boundaries, logging, and operational readiness must be assessed at the target host or explicitly deferred by the maintainer.
+## Production deployment acceptance
 
-## Final release blockers
+The Ubuntu Nginx/PHP-FPM workflow validates a disposable CI fixture only. It is **not** production deployment acceptance. No production host, credential, or live configuration was accessed. Complete this target-environment checklist and attach evidence before publication, or record a separate explicit maintainer deferral. No deferral is currently recorded.
 
-1. **Complete API Freeze maintainer approval.** Items 1, 2, 4 and 5 in the API approval document still require explicit disposition. The provisional-type decision above is not blanket approval.
-2. **Real production deployment acceptance or explicit maintainer deferral.** CI fixtures do not establish live TLS, trusted proxy and hosting topology.
-3. **Final release integrity and publication approval.** Reconfirm final commit and distribution identity after documentation-only changes. No merge to `main`, Stable tag, GitHub Release or Packagist publication is authorized by this decision record.
+| Acceptance item | Required evidence at target deployment | Status |
+| --- | --- | --- |
+| PHP runtime and SAPI | `php -v`, FPM/Apache module version, required extensions, `composer check-platform-reqs`; verify PHP `>=8.4.27` | **NOT RUN** |
+| Web server and document root | Identify Apache/Nginx and front controller; confirm only `public/` is web-accessible and vendor, source, secrets, and configuration are not directly served | **NOT RUN** |
+| Rewrite and routing | Verify direct route, nested path, 404, base path, and front-controller fallback against the real virtual host | **NOT RUN** |
+| HTTPS/TLS termination | Record certificate chain, redirect behavior, TLS policy, and which trusted component terminates TLS | **NOT RUN** |
+| Trusted Host and forwarded headers | Verify edge host allowlist, removal/replacement of client-supplied forwarding headers, backend network restriction, and scheme/host/path interpretation | **NOT RUN** |
+| Request-body limits | Record edge/web-server/FPM limits; prove oversized fixed-length and streamed bodies are rejected before parsers process them | **NOT RUN** |
+| Private files and permissions | Prove private files cannot be fetched; record least-privilege ownership/modes for code, secrets, logs, and writable paths | **NOT RUN** |
+| Error reporting and logs | Verify detailed errors are not returned, production display errors are disabled, required errors are logged without secrets, and rotation/retention works | **NOT RUN** |
+| Operational configuration | Record environment/secrets handling, process/resource limits, health checks, monitoring/alerting, restart behavior, and rollback procedure | **NOT RUN** |
 
-The global style failure is an **accepted, version-limited exception**, not a PASS and not a remaining request for style approval.
+Do not use PHP's built-in server as a production target. Point has no built-in trusted-proxy configuration; the deployment must enforce the edge trust boundary and configure its PSR-7 request creator appropriately.
+
+## Decisions already recorded
+
+- **Provisional API types:** approved preservation of current signatures and behavior in v0.1.0, without stable-contract promise.
+- **Global PHP-CS-Fixer baseline exception:** accepted for v0.1.0 only. Global style remains FAIL.
+
+These two decisions do not approve the remaining API freeze, production deployment, or final publication.
+
+## Remaining release gates
+
+1. **Full API freeze:** maintainer must approve, amend, or reject each pending disposition in the API approval record. No approval is inferred.
+2. **Production deployment:** complete and review the target-host checklist above, or make an explicit documented maintainer deferral.
+3. **Final release integrity and authorization:** after any package-visible change, rebuild and validate the distribution. Before publication, confirm the final branch identity and artifact identity, then obtain separate authorization for merge, tag, GitHub Release, and Packagist publication.
+
+No merge to `main`, Stable tag, GitHub Release, or Packagist publication is authorized by this report.
