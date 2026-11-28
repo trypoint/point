@@ -1,14 +1,14 @@
 # Point v0.1.0 Stable release readiness
 
-**Disposition: BLOCKED — API Freeze APPROVED; production acceptance and final publication authorization remain open.** Do not publish until the remaining mandatory gates are closed. This record distinguishes the current release branch identity from the earlier exact package identity run through consumer CI.
+**Disposition: READY FOR SEPARATE FINAL MAINTAINER PUBLICATION REVIEW — API Freeze APPROVED; real-host deployment verification explicitly DEFERRED for v0.1.0 by the maintainer on 2026-11-28.** No production host was validated. Merge, tag, GitHub Release and Packagist publication remain unauthorized; do not publish without a separate explicit decision. This record distinguishes the current release branch identity from the earlier exact package identity run through consumer CI.
 
 ## Source and distribution identity
 
 | Item | Verified identity |
 | --- | --- |
-| Branch HEAD reviewed before this readiness-record update | `c40d34652e707e12162431d89dd228c04acf9aaa` |
-| Review-base Git tree | `f18bd42b594996d047581bfb60c4ca4ed7cccf96` |
-| Parent | `2e1ba56a4511e8ab641cf73315f394f4d93a570b` |
+| Branch HEAD verified before production-deferral decision update | `4703e88b52701bd155494fe58ed19e06560cc291` |
+| Source Git tree verified before decision update | `e69c4ce71c786107a4857ad265b9ef64df40dd9d` |
+| Parent of source commit | `1af31cf7c576a7efb9c62354539da18d22de56ea` |
 | CI-tested framework commit | `01fd91e6c51cd63aa73d2e5a1383353a5ba37789` |
 | CI-tested framework tree | `4511d694e566426b35ee2005a11513fc27ce37b9` |
 | Reproducible tree-based ZIP SHA-256 | `4F289FE5A94B710E732A8D74B9B349C05D5D3012EC58BB7A69B5988BC208FF37` |
@@ -16,7 +16,7 @@
 | Package identity | Installed as `trypoint/point` `0.1.0`; PHP `>=8.4.27` |
 | Runtime dependency constraints | Unchanged from RC.1 |
 
-The commits after the CI-tested source are documentation-only and excluded from Composer export. Reproducibly build the release archive with Git 2.56.1 by resolving the selected branch commit to its tree (`git rev-parse <release-branch-commit>^{tree}`), then running `git archive --format=zip --mtime=2026-11-28T00:00:00Z --output=point-v0.1.0.zip <tree-sha>`. Archiving the tree rather than the commit and fixing entry timestamps makes the ZIP hash independent of excluded documentation commits. The review-base archive and prior tested archive each contain 80 entries; per-file SHA-256 comparison found zero additions, zero removals, and zero content differences. The earlier consumer archive SHA-256, `FAD94F419BC4642F5171A0E2522CED28A150D094A1E5B0872531D48FF62C8D98`, identifies the artifact used in CI, not the current Git commit. Consumer CI installed `trypoint/point` `0.1.0` and byte-verified all 80 packaged files for the content-identical artifact. The current tree-based ZIP checksum itself has not been submitted to consumer CI.
+The commits after the CI-tested source are documentation-only and excluded from Composer export. Reproducibly build the release archive with Git 2.56.1 by resolving the selected branch commit to its tree (`git rev-parse <release-branch-commit>^{tree}`), then running `git archive --format=zip --mtime=2026-11-28T00:00:00Z --output=point-v0.1.0.zip <tree-sha>`. Archiving the tree rather than the commit and fixing entry timestamps makes the ZIP hash independent of excluded documentation commits. The earlier review-base archive and prior tested archive each contained 80 entries with no content differences, as recorded by Codex. Independently, the current branch tree `e69c4ce71c786107a4857ad265b9ef64df40dd9d` and CI-tested tree `4511d694e566426b35ee2005a11513fc27ce37b9` were compared using the GitHub Git Trees API and the recorded `.gitattributes` export exclusions: 80/80 exportable files had identical paths and Git blob SHAs, with zero additions/removals/changes. This was an independent current-tree source-content check, not a local ZIP SHA-256 recomputation or a new CI run. The earlier consumer archive SHA-256, `FAD94F419BC4642F5171A0E2522CED28A150D094A1E5B0872531D48FF62C8D98`, identifies the artifact used in CI, not the current Git commit. Consumer CI installed `trypoint/point` `0.1.0` and byte-verified all 80 packaged files for the content-identical artifact. The current tree-based ZIP checksum itself has not been submitted to consumer CI.
 
 ## Quality and security gate matrix
 
@@ -43,7 +43,7 @@ The global style result remains **FAIL**. The maintainer accepted the pre-existi
 
 ## Production deployment acceptance
 
-The Ubuntu Nginx/PHP-FPM workflow validates a disposable CI fixture only. It is **not** production deployment acceptance. No production host, credential, or live configuration was accessed. Complete this target-environment checklist and attach evidence before publication, or record a separate explicit maintainer deferral. No deferral is currently recorded.
+**MAINTAINER DECISION — EXPLICIT DEFERRAL APPROVED FOR v0.1.0 ON 2026-11-28.** The project maintainer explicitly authorized deferring the real production-host validation gate for this library release. This is a risk acceptance for the absence of real-host evidence, **not** verification of real-world deployment readiness and **not** authorization to publish. The Ubuntu Nginx/PHP-FPM workflow validates a disposable CI fixture only. No production host, credential, or live configuration was accessed. The checklist below is retained as **NOT RUN** evidence and must be completed for any separately approved production deployment. Point is a Composer-distributed library; each consuming application's deployment owner must verify the applicable controls in their real target environment. Do not describe the deferred checks as PASS.
 
 | Acceptance item | Required evidence at target deployment | Status |
 | --- | --- | --- |
@@ -59,8 +59,18 @@ The Ubuntu Nginx/PHP-FPM workflow validates a disposable CI fixture only. It is 
 
 Do not use PHP's built-in server as a production target. Point has no built-in trusted-proxy configuration; the deployment must enforce the edge trust boundary and configure its PSR-7 request creator appropriately.
 
+## Explicit production validation deferral — scope and limitations
+
+- **Decision:** ACCEPTED / DEFERRED for Point Framework **v0.1.0 only**, explicitly approved by the project maintainer on **2026-11-28** in conversation; no inferred authorization for future versions.
+- **What is deferred:** Live target-host acceptance of the nine checklist items above: supported PHP/SAPI and extensions, protected document root, rewrites, TLS termination, Host/forwarded-header trust, request-size limits, private-file permissions, error handling/logging, and operations.
+- **What remains established:** Local PHPUnit, XML-security regression tests, PHPStan, Composer checks and six independent consumer CI jobs on their stated platforms; the Nginx/PHP-FPM CI job is an isolated fixture.
+- **Limitations and residual risk:** Different hosts, TLS terminators, reverse proxies, filesystem policies and request-ingress limits may behave differently. The framework does not provide built-in trusted-proxy enforcement. Applications must implement and validate their actual hosting security controls; no claim of production-host certification is made.
+- **Release effect:** This particular real-host verification requirement is no longer a blocking pre-publication gate for v0.1.0 *by explicit maintainer decision*. The checklist remains **NOT RUN**, not PASS. Actual application deployment must not rely on the CI fixture as proof of production readiness.
+- **Scope of authorization:** Documentation and release-readiness update only. This does **not** authorize a branch merge, tag creation, GitHub Release, Packagist publication or live deployment.
+
 ## Decisions already recorded
 
+- **Production host gate: DEFERRED, 2026-11-28.** Maintainer-approved version-limited risk acceptance; all live-host checks remain NOT RUN.
 - **Full API Freeze: APPROVED, 2026-11-28.** All seven worksheet dispositions are approved, including the earlier provisional-type decision.
 - **Provisional API types:** current signatures and behavior preserved in v0.1.0, without stable-contract promises.
 - **Global PHP-CS-Fixer baseline exception:** accepted for v0.1.0 only. Global style remains FAIL.
@@ -69,9 +79,9 @@ These decisions do not approve production deployment, merge, tag, GitHub Release
 
 ## Remaining release gates
 
-1. **Production deployment:** complete and review the target-host checklist above, or make an explicit documented maintainer deferral. No deferral is approved.
-2. **Final release integrity and authorization:** after any package-visible change, rebuild and validate the distribution. Before publication, reconfirm the final branch and artifact identity, then obtain separate authorization for merge, tag, GitHub Release, and Packagist publication.
+1. **Final source/distribution identity review:** Reconfirm the exact publication target branch HEAD and the exported 80-file package at release time; rebuild and revalidate if package-visible files change. Current Git-tree exported content matches the CI-tested package 80/80 paths and blob SHAs; the previously recorded fixed-timestamp ZIP SHA-256 has not been recomputed in this GitHub-only verification.
+2. **Separate final publication authorization:** Obtain explicit maintainer permission before any merge to `main`, Stable tag, GitHub Release, or Packagist publication. These actions remain **NOT AUTHORIZED**.
 
-**Closed gate:** Complete API Freeze — **APPROVED**, 2026-11-28. The existing CI and PHP-CS-Fixer evidence is unchanged by these export-ignored documentation updates.
+**Closed or dispositioned gates:** Complete API Freeze **APPROVED**; real-host production validation **EXPLICITLY DEFERRED for v0.1.0** (NOT RUN, never PASS); PHP-CS-Fixer full-tree **FAIL with approved version-limited exception**. The existing CI evidence is unaffected by these export-ignored documentation updates.
 
 No merge to `main`, Stable tag, GitHub Release, or Packagist publication is authorized by this report.
